@@ -133,7 +133,7 @@
     },
     "CallService!stop": {
       "serviceName": "/behavior_tree_node/high_level_control",
-      "requestPayload": "{ \"command\": 254 }"
+      "requestPayload": "{ \"command\": 8 }"
     },
     "Publish!teleop": {
       "topicName": "/cmd_vel_teleop",
