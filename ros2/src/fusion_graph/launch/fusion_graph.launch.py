@@ -57,7 +57,10 @@ def _read_robot_config() -> dict:
     0.3 (task #48). Deep-merge the template UNDER the installed file, same
     order/semantics as robot_config_util.load_robot_params.
     """
-    runtime = "/ros2_ws/config/mowgli_robot.yaml"
+    # Webots sets MOWGLI_ROBOT_CONFIG to its simulator-only model overlay.
+    # Hardware launches leave it unset and retain the installed site config.
+    runtime = os.environ.get(
+        "MOWGLI_ROBOT_CONFIG", "/ros2_ws/config/mowgli_robot.yaml")
     fallback = os.path.join(
         get_package_share_directory("mowgli_bringup"),
         "config", "mowgli_robot.yaml",
@@ -145,6 +148,9 @@ def generate_launch_description() -> LaunchDescription:
             "datum_lon": datum_lon,
             "lever_arm_x": lever_x,
             "lever_arm_y": lever_y,
+            # The SA650ECO Webots profile raises this to make /gps/fix a
+            # compatibility stub rather than a high-precision RTK factor.
+            "gps_sigma_floor": float(cfg.get("gps_sigma_floor", 0.003) or 0.003),
             "use_magnetometer": use_magnetometer,
             "use_scan_matching": use_scan_matching,
             "use_loop_closure": use_loop_closure,
