@@ -255,7 +255,10 @@ def generate_launch_description() -> LaunchDescription:
     # Merged params (template defaults + installed sparse overrides) — chassis
     # geometry lives in the template, so the footprint is correct even when the
     # installed config omits the dimensions (they are not install-decided).
-    rp = load_robot_params(bringup_dir, "/ros2_ws/config/mowgli_robot.yaml")
+    rp = load_robot_params(
+        bringup_dir,
+        os.environ.get("MOWGLI_ROBOT_CONFIG", "/ros2_ws/config/mowgli_robot.yaml"),
+    )
     footprint_str = ""
     # Physical chassis width default — overwritten from the robot config below
     # when present. Hoisted here so it is always defined for the chassis_safety_inset
@@ -310,6 +313,10 @@ def generate_launch_description() -> LaunchDescription:
     #                      list). See issue #191.
     transit_speed = 0.3
     mowing_speed = 0.25
+    # Optional simulator-only caps. The physical template does not carry
+    # these keys, so its existing controller defaults remain unchanged.
+    max_linear_speed = None
+    max_angular_speed = None
     datum_lat = 0.000000000
     datum_lon = 0.000000000
     # GPS antenna lever arm (base_link → antenna), shared by cog_to_imu (COG
@@ -463,7 +470,11 @@ def generate_launch_description() -> LaunchDescription:
     declination_deg = 1.5
     min_horizontal_uT = 5.0
     mag_yaw_variance = 0.0027
-    runtime_robot_config = "/ros2_ws/config/mowgli_robot.yaml"
+    # Webots compose services select their dedicated model overlay through the
+    # environment. Physical launches leave it unset and retain the installed
+    # site configuration.
+    runtime_robot_config = os.environ.get(
+        "MOWGLI_ROBOT_CONFIG", "/ros2_ws/config/mowgli_robot.yaml")
     # Merged params: in-package template defaults with the installed sparse
     # config layered on top. Every rt_rp.get(key, <fallback>) below therefore
     # resolves to the TEMPLATE default when the installed config omits the key,
@@ -478,6 +489,10 @@ def generate_launch_description() -> LaunchDescription:
         dock_pose_yaw = float(rt_rp.get("dock_pose_yaw", 0.0))
         transit_speed = float(rt_rp.get("transit_speed", transit_speed))
         mowing_speed = float(rt_rp.get("mowing_speed", mowing_speed))
+        if "max_linear_speed" in rt_rp:
+            max_linear_speed = float(rt_rp["max_linear_speed"])
+        if "max_angular_speed" in rt_rp:
+            max_angular_speed = float(rt_rp["max_angular_speed"])
         datum_lat = float(rt_rp.get("datum_lat", 0.000000000))
         datum_lon = float(rt_rp.get("datum_lon", 0.000000000))
         gps_x = float(rt_rp.get("gps_x", 0.0))
@@ -658,6 +673,12 @@ def generate_launch_description() -> LaunchDescription:
                  .setdefault("ros__parameters", {})
                  .setdefault("FollowPath", {}))
         fp["desired_linear_vel"] = transit_speed
+        if max_linear_speed is not None:
+            fp["desired_linear_vel"] = min(fp["desired_linear_vel"], max_linear_speed)
+        if max_angular_speed is not None:
+            fp["rotate_to_heading_angular_vel"] = min(
+                float(fp.get("rotate_to_heading_angular_vel", max_angular_speed)),
+                max_angular_speed)
 
         # FollowCoveragePath (coverage controller = FTCController). FTC's
         # carrot forward-speed knob is speed_fast; mowing_speed overrides it.
@@ -668,6 +689,11 @@ def generate_launch_description() -> LaunchDescription:
                   .setdefault("ros__parameters", {})
                   .setdefault("FollowCoveragePath", {}))
         fcp["speed_fast"] = mowing_speed
+        if max_linear_speed is not None:
+            fcp["speed_fast"] = min(fcp["speed_fast"], max_linear_speed)
+            fcp["max_cmd_vel_speed"] = max_linear_speed
+        if max_angular_speed is not None:
+            fcp["max_cmd_vel_ang"] = max_angular_speed
         # FTC hard-clamps its final longitudinal command to ±max_cmd_vel_speed
         # (ftc_controller.cpp). speed_fast only sets the carrot target, so any
         # mowing_speed above the base max_cmd_vel_speed (0.30) was silently

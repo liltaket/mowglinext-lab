@@ -5,7 +5,7 @@
   This URDF mirrors the kinematic structure of the inline Robot {} node
   in worlds_webots/mowgli_garden.wbt:
     * chassis (base_link) at z = 0.10
-    * two rear drive wheels at ±0.1625 m on Y, axis along Y, radius 0.093
+    * two rear drive wheels at ±0.170 m on Y, axis along Y, radius 0.100
     * two front passive casters (kept simple here as fixed mounts; they
       are real BallJoints in the .wbt, so the wheel TFs published by RSP
       from this URDF will be slightly off in pitch — irrelevant to the
@@ -39,15 +39,15 @@
   -->
   <link name="base_link">
     <visual>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <origin xyz="0.17 0 0.13" rpy="0 0 0"/>
       <geometry>
-        <box size="0.60 0.40 0.19"/>
+        <box size="0.57 0.39 0.26"/>
       </geometry>
     </visual>
     <collision>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <origin xyz="0.17 0 0.13" rpy="0 0 0"/>
       <geometry>
-        <box size="0.60 0.40 0.19"/>
+        <box size="0.57 0.39 0.26"/>
       </geometry>
     </collision>
   </link>
@@ -68,8 +68,8 @@
     <parent link="base_footprint"/>
     <child link="base_link"/>
     <!-- base_link sits at the rear-wheel axis center (per OpenMower
-         convention, matches mowgli_robot.yaml). wheel_radius = 0.093 m. -->
-    <origin xyz="0 0 0.093" rpy="0 0 0"/>
+         convention. The PRELIMINARY SA650ECO wheel_radius = 0.100 m. -->
+    <origin xyz="0 0 0.100" rpy="0 0 0"/>
   </joint>
 
   <!-- Left rear drive wheel (physics in .wbt — see comment on base_link). -->
@@ -77,13 +77,13 @@
     <visual>
       <origin xyz="0 0 0" rpy="1.5708 0 0"/>
       <geometry>
-        <cylinder length="0.04" radius="0.093"/>
+        <cylinder length="0.04" radius="0.100"/>
       </geometry>
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="1.5708 0 0"/>
       <geometry>
-        <cylinder length="0.04" radius="0.093"/>
+        <cylinder length="0.04" radius="0.100"/>
       </geometry>
     </collision>
   </link>
@@ -92,9 +92,9 @@
     <child link="left_wheel"/>
     <!-- Rear-wheel axis IS base_link (per OpenMower convention).
          Wheel centre at base_link frame z=0; wheel-bottom flush with
-         the floor (radius 0.093 below base_link, base_link at world
-         z=0.093). track = wheel_track = 0.325 → ±0.1625 on Y. -->
-    <origin xyz="0 0.1625 0" rpy="0 0 0"/>
+         the floor (radius 0.100 below base_link, base_link at world
+         z=0.100). PRELIMINARY track = wheel_track = 0.340 → ±0.170 on Y. -->
+    <origin xyz="0 0.170 0" rpy="0 0 0"/>
     <axis xyz="0 1 0"/>
     <limit effort="20.0" velocity="100.0"/>
   </joint>
@@ -104,13 +104,13 @@
     <visual>
       <origin xyz="0 0 0" rpy="1.5708 0 0"/>
       <geometry>
-        <cylinder length="0.04" radius="0.093"/>
+        <cylinder length="0.04" radius="0.100"/>
       </geometry>
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="1.5708 0 0"/>
       <geometry>
-        <cylinder length="0.04" radius="0.093"/>
+        <cylinder length="0.04" radius="0.100"/>
       </geometry>
     </collision>
   </link>
@@ -118,7 +118,7 @@
     <parent link="base_link"/>
     <child link="right_wheel"/>
     <!-- See left_wheel_motor — symmetric -Y placement. -->
-    <origin xyz="0 -0.1625 0" rpy="0 0 0"/>
+    <origin xyz="0 -0.170 0" rpy="0 0 0"/>
     <axis xyz="0 1 0"/>
     <limit effort="20.0" velocity="100.0"/>
   </joint>
@@ -129,15 +129,15 @@
     <parent link="base_link"/>
     <child link="lidar_link"/>
     <!-- LiDAR centred on base_link (x=0, y=0.024 lateral) at +20 cm
-         above the chassis top. chassis_top above base_link = 0.190 m
+         above the chassis top. chassis_top above base_link = 0.260 m
          (= chassis_height/2 + chassis_center offset), so
-         z = 0.190 + 0.20 = 0.390. Bumped from +10 cm because Webots'
+         z = 0.260 + 0.20 = 0.460. Bumped from +10 cm because Webots'
          LiDAR was clipping the chassis top edge at 10 cm clearance,
          flooding collision_monitor's PolygonStop with ~80 false hits.
          Yaw=π for the back-to-front mount (cable side aft);
          composes with the .wbt-side rotation to net 0 yaw between
          base_link and lidar_link. -->
-    <origin xyz="0 0.024 0.390" rpy="0 0 3.1408"/>
+    <origin xyz="0 0.024 0.460" rpy="0 0 3.1408"/>
   </joint>
 
   <link name="imu_link"/>
@@ -145,7 +145,7 @@
     <parent link="base_link"/>
     <child link="imu_link"/>
     <!-- IMU mounted at chassis centre (mowgli_robot.yaml imu_x/y/z). -->
-    <origin xyz="0.18 0 0.095" rpy="0 0 0"/>
+    <origin xyz="0.17 0 0.260" rpy="0 0 0"/>
   </joint>
 
   <link name="gps_link"/>
@@ -153,8 +153,8 @@
     <parent link="base_link"/>
     <child link="gps_link"/>
     <!-- GPS antenna +30 cm forward of base_link, on the chassis top
-         (gps_x=0.30, chassis_top above base_link = 0.19 m). -->
-    <origin xyz="0.30 0 0.19" rpy="0 0 0"/>
+         (gps_x=0.285, chassis_top above base_link = 0.26 m). -->
+    <origin xyz="0.285 0 0.260" rpy="0 0 0"/>
   </joint>
 
   <!-- ── Webots device + plugin wiring ─────────────────────────────── -->

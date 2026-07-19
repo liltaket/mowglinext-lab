@@ -1,0 +1,57 @@
+# Yard Force SA650ECO Webots simulation profile.
+#
+# This is a SIMULATOR-ONLY overlay. It is merged over the regular robot
+# template only when a Webots compose service starts; it is not part of the
+# physical-hardware launch path.
+#
+# Measurements marked PRELIMINARY have not yet been measured on the user's
+# mower. Update those values here first, then mirror them in the Webots PROTO
+# and URDF (their comments point back to this file).
+mowgli:
+  ros__parameters:
+    mower_model: "YardForceSA650ECO"
+
+    # Official SA650ECO dimensions and mass.
+    chassis_length: 0.570
+    chassis_width: 0.390
+    chassis_height: 0.260
+    chassis_mass_kg: 8.5
+    chassis_center_x: 0.170
+
+    # PRELIMINARY: measure on the physical mower before hardware integration.
+    drive_wheel_diameter: 0.200
+    wheel_radius: 0.100
+    wheel_track: 0.340
+
+    # Webots sensor-frame offsets, relative to the rear drive-wheel axis.
+    imu_x: 0.170
+    imu_y: 0.0
+    imu_z: 0.260
+    gps_x: 0.285
+    gps_y: 0.0
+    lidar_x: 0.0
+    lidar_y: 0.024
+    lidar_z: 0.460
+
+    # Match worlds_webots/mowgli_garden.wbt. Explicitly pin the datum so
+    # fusion_graph does not self-seed from a noisy simulated GPS sample.
+    datum_lat: 48.137154000
+    datum_lon: 11.576124000
+
+    # Official cutting geometry.
+    tool_width: 0.180
+    cutting_height_min: 0.020
+    cutting_height_max: 0.060
+    max_slope_percent: 40
+
+    # Simulator motion limits.
+    mowing_speed: 0.20
+    transit_speed: 0.20
+    max_mps: 0.30
+    max_linear_speed: 0.30
+    max_angular_speed: 0.80
+
+    # The current dock world pose is intentionally retained.
+    dock_pose_x: 0.0
+    dock_pose_y: 0.0
+    dock_pose_yaw: 0.0

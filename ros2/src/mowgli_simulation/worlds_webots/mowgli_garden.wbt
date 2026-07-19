@@ -85,16 +85,16 @@ MowgliMower {
     Gyro { name "gyro" }
     Accelerometer { name "accelerometer" }
 
-    # GPS antenna at +30 cm forward of base_link, sitting on the
-    # chassis top (slot z=0 ⇒ world z=0.283 after PROTO slot lift).
+    # GPS antenna at +28.5 cm forward of base_link, sitting on the
+    # chassis top (slot z=0 ⇒ world z=0.360 after PROTO slot lift).
     GPS {
-      translation 0.30 0 0.0
+      translation 0.285 0 0.0
       name "gps"
     }
 
     # 360° 2D LiDAR centred on base_link (lidar_x=0, lidar_y=0.024).
-    # Slot is at world z=0.283 (chassis top), so slot z=0.20 ⇒ world
-    # z=0.483 — 20 cm above chassis top. Bumped from 10 cm because at
+    # Slot is at world z=0.360 (chassis top), so slot z=0.20 ⇒ world
+    # z=0.560 — 20 cm above chassis top. Bumped from 10 cm because at
     # 10 cm clearance Webots' LiDAR was emitting ~80 returns at
     # ~0.18 m radius (chassis edge), tripping collision_monitor's
     # PolygonStop and freezing the robot. 20 cm is well clear.

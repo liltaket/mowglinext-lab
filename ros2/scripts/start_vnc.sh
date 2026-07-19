@@ -57,6 +57,10 @@ if [ -f /ros2_ws/install/setup.bash ]; then
     source /ros2_ws/install/setup.bash
 fi
 
+# Select the Webots-only SA650ECO overlay. The physical-hardware launch path
+# does not set this variable and continues to use its normal configuration.
+export MOWGLI_ROBOT_CONFIG="${MOWGLI_ROBOT_CONFIG:-/ros2_ws/install/mowgli_simulation/share/mowgli_simulation/config_webots/yard_force_sa650eco.yaml}"
+
 # Launch the full simulation with Gazebo GUI (not headless)
 exec ros2 launch mowgli_bringup sim_full_system.launch.py \
     headless:=false \

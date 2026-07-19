@@ -17,6 +17,8 @@ x-ros2-env: &ros2-env
   ROS_AUTOMATIC_DISCOVERY_RANGE: LOCALHOST
   RCUTILS_COLORIZED_OUTPUT: "1"
   RCUTILS_LOGGING_USE_STDOUT: "1"
+  # Simulator-only robot geometry; physical launches do not use this overlay.
+  MOWGLI_ROBOT_CONFIG: /ros2_ws/install/mowgli_simulation/share/mowgli_simulation/config_webots/yard_force_sa650eco.yaml
 
 services:
 

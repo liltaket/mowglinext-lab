@@ -111,9 +111,12 @@ The class implements the contract documented in
 from __future__ import annotations
 
 import math
+import os
 import time
 
 import rclpy
+import yaml
+from ament_index_python.packages import get_package_share_directory
 from geometry_msgs.msg import PoseStamped, TwistStamped
 
 
@@ -126,8 +129,8 @@ class KinematicDrive:
     # any more (see the long comment in init() about why we leave the
     # motors to the diff_drive_controller). They appear in the boot log
     # so the operator can sanity-check the geometry against the YAML.
-    WHEEL_SEPARATION = 0.325  # m, track between left and right wheels
-    WHEEL_RADIUS = 0.093      # m
+    WHEEL_SEPARATION = 0.340  # m, PRELIMINARY SA650ECO track
+    WHEEL_RADIUS = 0.100      # m, PRELIMINARY SA650ECO wheel radius
 
     # ── Firmware motor-model constraints ───────────────────────────────
     # The real firmware turns cmd_vel into per-wheel PWM via diff-drive
@@ -144,7 +147,7 @@ class KinematicDrive:
     # Values mirror firmware/stm32/ros_usbnode/{include/board.h,
     # src/ros/ros_custom/cpp_main.cpp}. Keep them in lockstep — if
     # the firmware gains change, change them here too.
-    FIRMWARE_MAX_MPS              = 0.5
+    FIRMWARE_MAX_MPS              = 0.30
     FIRMWARE_PWM_PER_MPS          = 300.0
     FIRMWARE_PWM_MAX              = 255.0
     FIRMWARE_DEADBAND_PWM_STATIC  = 40.0   # PWM needed to break static friction from rest
@@ -173,6 +176,20 @@ class KinematicDrive:
     # Plugin lifecycle
     # ──────────────────────────────────────────────────────────────────────
     def init(self, webots_node, properties):
+        profile_path = os.path.join(
+            get_package_share_directory("mowgli_simulation"),
+            "config_webots",
+            "yard_force_sa650eco.yaml",
+        )
+        with open(profile_path, "r", encoding="utf-8") as profile_file:
+            profile = yaml.safe_load(profile_file) or {}
+        profile_params = profile.get("mowgli", {}).get("ros__parameters", {})
+        # Keep the kinematic motor model on the same central, simulator-only
+        # profile as diff_drive_controller. The wheel dimensions are clearly
+        # marked PRELIMINARY in that file.
+        self.WHEEL_SEPARATION = float(profile_params["wheel_track"])
+        self.WHEEL_RADIUS = float(profile_params["wheel_radius"])
+        self.FIRMWARE_MAX_MPS = float(profile_params["max_mps"])
         self.__supervisor = webots_node.robot
         self.__timestep_ms = int(self.__supervisor.getBasicTimeStep())
         self.__dt_s = self.__timestep_ms / 1000.0

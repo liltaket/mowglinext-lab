@@ -26,6 +26,9 @@ Then in another shell:
 """
 
 import os
+import tempfile
+
+import yaml
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
@@ -66,6 +69,29 @@ def generate_launch_description():
     # bridge to controller_manager.
     robot_description_path = os.path.join(pkg_share, "urdf_webots", "mowgli_webots.urdf")
     ros2_control_params = os.path.join(pkg_share, "config_webots", "ros2_control.yaml")
+    profile_path = os.path.join(
+        pkg_share, "config_webots", "yard_force_sa650eco.yaml")
+
+    # The profile is the simulator's source of truth for preliminary wheel
+    # geometry and motion limits. Generate a private controller parameter file
+    # at launch so changing that profile cannot leave diff_drive_controller
+    # out of sync with the model-specific values.
+    with open(profile_path, "r", encoding="utf-8") as f:
+        profile = yaml.safe_load(f) or {}
+    profile_params = profile.get("mowgli", {}).get("ros__parameters", {})
+    with open(ros2_control_params, "r", encoding="utf-8") as f:
+        control_params = yaml.safe_load(f) or {}
+    dd = control_params["diffdrive_controller"]["ros__parameters"]
+    dd["wheel_separation"] = float(profile_params["wheel_track"])
+    dd["wheel_radius"] = float(profile_params["wheel_radius"])
+    dd["linear"]["x"]["max_velocity"] = float(profile_params["max_linear_speed"])
+    dd["linear"]["x"]["min_velocity"] = -float(profile_params["max_linear_speed"])
+    dd["angular"]["z"]["max_velocity"] = float(profile_params["max_angular_speed"])
+    dd["angular"]["z"]["min_velocity"] = -float(profile_params["max_angular_speed"])
+    generated_params = tempfile.NamedTemporaryFile(
+        mode="w", prefix="mowgli_sa650eco_control_", suffix=".yaml", delete=False)
+    yaml.safe_dump(control_params, generated_params, sort_keys=False)
+    generated_params.close()
 
     # controller_manager subscribes to /robot_description (std_msgs/String)
     # to discover the joints declared in the URDF's <ros2_control> block.
@@ -97,7 +123,7 @@ def generate_launch_description():
                 # — it can latch the wrong content).
                 "set_robot_state_publisher": False,
             },
-            ros2_control_params,
+            generated_params.name,
         ],
         # Controller defaults: /diffdrive_controller/cmd_vel and
         # /diffdrive_controller/odom. Map them onto the topics the rest

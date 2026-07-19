@@ -67,13 +67,13 @@
 #
 # ──────────────────────────────────────────────────────────────────
 # Design (current):
-#   * 2 driving wheels at body x=0, y=±0.1625, z=0.093 (radius 0.093).
+#   * 2 driving wheels at body x=0, y=±0.170, z=0.100 (radius 0.100).
 #     Wheel-bottom rests at z=0 in robot frame.
 #   * 1 single caster at body (+0.20, 0, 0.04), sphere radius 0.04.
 #   * Chassis visual: 0.30 m × 0.30 m × 0.10 m box (cosmetic).
 #   * Chassis bounding box: 0.30 × 0.28 × 0.08 m, centred at
 #     (+0.05, 0, 0.25) — well above the wheels and casters.
-#   * Total mass 8.76 kg. Wheel mass 0.5 kg each (matches ROSbot).
+#   * Total mass 8.50 kg. Wheel mass 0.5 kg each (preliminary allocation).
 #   * COM at (0, 0, 0.05) — over wheel axis, just below it on z.
 #   * HingeJoint axis (0, -1, 0) — flipped from the natural (0, 1, 0)
 #     because diff_drive_controller commands positive ω for forward
@@ -110,14 +110,16 @@ PROTO MowgliMower [
     synchronization IS synchronization
     children [
       # ── Chassis visual (cosmetic only — physics in boundingObject) ──
-      # YardForce 500 chassis: 0.60 m long × 0.40 m wide × 0.19 m tall
+      # Yard Force SA650ECO chassis: 0.570 m long × 0.390 m wide × 0.260 m tall.
       # (mowgli_robot.yaml). base_link sits at the rear-wheel axis
       # (x=0 in robot frame), so the chassis is centred at chassis_center_x
-      # = +0.18 m in front of base_link. Chassis center z =
-      # wheel_radius + chassis_height/2 = 0.093 + 0.095 = 0.188 m above
+      # = +0.170 m in front of base_link. Chassis center z =
+      # wheel_radius + chassis_height/2 = 0.100 + 0.130 = 0.230 m above
       # ground (so the chassis bottom rests at the wheel-axle height).
       Pose {
-        translation 0.18 0 0.188
+        # SA650ECO: 0.570 x 0.390 x 0.260 m. The drive-wheel geometry
+        # below is PRELIMINARY; its source is yard_force_sa650eco.yaml.
+        translation 0.17 0 0.23
         children [
           Shape {
             appearance PBRAppearance {
@@ -125,17 +127,17 @@ PROTO MowgliMower [
               roughness 0.5
               metalness 0.2
             }
-            geometry Box { size 0.60 0.40 0.19 }
+            geometry Box { size 0.57 0.39 0.26 }
           }
         ]
       }
 
       # ── Extension slot (sensors) ─────────────────────────────────────
       # Lifted to chassis-top so a sensor placed at slot (x, y, z) ends
-      # up at robot frame (x, y, 0.283 + z). Chassis top z = 0.188 +
-      # 0.095 = 0.283 m above ground.
+      # up at robot frame (x, y, 0.360 + z). Chassis top is 0.360 m above
+      # ground.
       Pose {
-        translation 0 0 0.283
+        translation 0 0 0.36
         children IS extensionSlot
       }
 
@@ -144,7 +146,7 @@ PROTO MowgliMower [
         jointParameters HingeJointParameters {
           # See the file header for the axis-sign rationale.
           axis 0 -1 0
-          anchor 0 0.1625 0.093
+          anchor 0 0.17 0.10
           # Copied from ROSbot.proto — undocumented why these specific
           # values, but they are the canonical Webots+ROS2 settings.
           dampingConstant 5.0
@@ -153,7 +155,7 @@ PROTO MowgliMower [
         device [
           RotationalMotor {
             name "left_wheel_motor"
-            # 21.5 rad/s × 0.093 m = 2.0 m/s, well above any cmd_vel.
+            # Well above the controller's 0.30 m/s SA650ECO sim cap.
             maxVelocity 21.5
             maxTorque 100
           }
@@ -163,7 +165,7 @@ PROTO MowgliMower [
           }
         ]
         endPoint Solid {
-          translation 0 0.1625 0.093
+          translation 0 0.17 0.10
           children [
             DEF WHEEL_VISUAL Pose {
               # Webots' Cylinder geometry has its central axis along Z
@@ -178,7 +180,7 @@ PROTO MowgliMower [
                     textureTransform TextureTransform { scale 1.7 0.76 }
                     type "bike"
                   }
-                  geometry DEF WHEEL_CYL Cylinder { radius 0.093 height 0.04 }
+                  geometry DEF WHEEL_CYL Cylinder { radius 0.10 height 0.04 }
                 }
               ]
             }
@@ -202,7 +204,7 @@ PROTO MowgliMower [
       DEF RIGHT_JOINT HingeJoint {
         jointParameters HingeJointParameters {
           axis 0 -1 0
-          anchor 0 -0.1625 0.093
+          anchor 0 -0.17 0.10
           dampingConstant 5.0
           staticFriction 1.0
         }
@@ -218,7 +220,7 @@ PROTO MowgliMower [
           }
         ]
         endPoint Solid {
-          translation 0 -0.1625 0.093
+          translation 0 -0.17 0.10
           children [
             USE WHEEL_VISUAL
           ]
@@ -244,9 +246,9 @@ PROTO MowgliMower [
       # of the chassis weight. Placed at +0.30 m forward of base_link
       # (chassis_center_x + ~0.12).
       DEF FRONT_LEFT_CASTER BallJoint {
-        jointParameters BallJointParameters { anchor 0.30 0.18 0.03 }
+        jointParameters BallJointParameters { anchor 0.30 0.175 0.03 }
         endPoint Solid {
-          translation 0.30 0.18 0.03
+          translation 0.30 0.175 0.03
           children [
             Shape {
               appearance PBRAppearance { baseColor 0.05 0.05 0.05 }
@@ -259,9 +261,9 @@ PROTO MowgliMower [
         }
       }
       DEF FRONT_RIGHT_CASTER BallJoint {
-        jointParameters BallJointParameters { anchor 0.30 -0.18 0.03 }
+        jointParameters BallJointParameters { anchor 0.30 -0.175 0.03 }
         endPoint Solid {
-          translation 0.30 -0.18 0.03
+          translation 0.30 -0.175 0.03
           children [
             Shape {
               appearance PBRAppearance { baseColor 0.05 0.05 0.05 }
@@ -276,25 +278,27 @@ PROTO MowgliMower [
     ]
 
     # ── Chassis collision (matches the visual chassis box) ────────────────
-    # Centred at (chassis_center_x, 0, 0.188) with size 0.60 × 0.40 × 0.19
+    # Centred at (chassis_center_x, 0, 0.230) with size 0.570 × 0.390 × 0.260
     # — same as the visual. Wheels protrude below the chassis on z so the
     # chassis itself never touches the ground.
     boundingObject Pose {
-      translation 0.18 0 0.188
+      translation 0.17 0 0.23
       children [
-        Box { size 0.60 0.40 0.19 }
+        Box { size 0.57 0.39 0.26 }
       ]
     }
 
     # ── Mass + COM ────────────────────────────────────────────────────────
-    # 8.76 kg total (mowgli_robot.yaml chassis_mass_kg). COM at the
-    # chassis geometric centre (0.18, 0, 0.188): forward of the rear-
+    # 8.50 kg total (yard_force_sa650eco.yaml). COM at the
+    # chassis geometric centre (0.17, 0, 0.23): forward of the rear-
     # wheel axis so the front casters are loaded under static
     # equilibrium, just like the real YardForce 500.
     physics Physics {
       density -1
-      mass 8.76
-      centerOfMass [ 0.18 0 0.188 ]
+      # 7.40 kg chassis + 2 x 0.50 kg drive wheels + 2 x 0.05 kg
+      # casters = official 8.50 kg total simulator mass.
+      mass 7.40
+      centerOfMass [ 0.17 0 0.23 ]
     }
   }
 }

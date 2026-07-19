@@ -482,8 +482,10 @@ def generate_launch_description() -> LaunchDescription:
             {
                 "use_sim_time": True,
                 "deadband_enabled": True,
-                "wheel_separation": 0.325,
-                "firmware_max_mps": 0.5,
+                # PRELIMINARY SA650ECO values. Keep in sync with the
+                # simulator-only profile in config_webots/yard_force_sa650eco.yaml.
+                "wheel_separation": 0.340,
+                "firmware_max_mps": 0.30,
                 "firmware_pwm_per_mps": 300.0,
                 "firmware_pwm_max": 255.0,
                 "firmware_deadband_pwm_static": 40.0,
