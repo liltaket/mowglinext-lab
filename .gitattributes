@@ -1,0 +1,5 @@
+# Docker build scripts must retain Unix line endings when the repository is
+# checked out on Windows; otherwise their shebangs cannot be executed in Linux
+# containers.
+*.sh text eol=lf
+ros2/src/mowgli_simulation/scripts/*.py text eol=lf

@@ -475,14 +475,14 @@ CMD ["ros2", "launch", "mowgli_bringup", "mowgli.launch.py"]
 # Stage 6: simulation
 # Extends runtime with the Webots simulator for headless/web simulation.
 #
-# NOTE: This stage is mid-migration from Gazebo Ignition to Webots. The
-# Gazebo apt packages have been removed; the Webots binary + ROS2 driver
-# install steps are TODO (Phase 2 of the Webots migration). Running the
-# simulation image as-is will fail until Webots is installed here.
+# Webots integration for ROS 2 Kilted. The package provides
+# webots_ros2_driver and downloads a compatible Webots installation when one
+# is not otherwise available.
 # =============================================================================
 FROM runtime AS simulation
 
 ARG DEBIAN_FRONTEND=noninteractive
+ARG WEBOTS_VERSION=R2025a
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     # Headless rendering (sensors need a virtual display when no GPU)
@@ -495,8 +495,23 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     openbox \
     xterm \
     x11-utils \
-    # TODO(webots): install Webots binary + ros-kilted-webots-ros2-driver
+    wget \
+    ca-certificates \
+    # Webots ROS 2 launcher, controller and driver
+    ros-kilted-webots-ros2 \
+ && wget -q "https://github.com/cyberbotics/webots/releases/download/${WEBOTS_VERSION}/webots_2025a_amd64.deb" -O /tmp/webots.deb \
+ && apt-get install -y --no-install-recommends /tmp/webots.deb \
+ && rm -f /tmp/webots.deb \
  && rm -rf /var/lib/apt/lists/*
+
+ENV WEBOTS_HOME=/usr/local/webots
+
+# Docker Desktop's Linux kernel identifies as ``microsoft-standard``. The
+# Webots ROS driver consequently takes its WSL path-conversion branch and
+# invokes the Windows-only ``wslpath`` binary inside this Linux container.
+# In a container the installed Linux Webots binary must be used directly.
+RUN sed -i "s/return 'microsoft-standard' in uname().release/return False if os.path.exists('\/.dockerenv') else 'microsoft-standard' in uname().release/" \
+    /opt/ros/kilted/lib/python3.12/site-packages/webots_ros2_driver/utils.py
 
 # Copy VNC startup script
 COPY ros2/scripts/start_vnc.sh /ros2_ws/scripts/start_vnc.sh

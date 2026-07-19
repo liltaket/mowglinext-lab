@@ -36,7 +36,7 @@ Wiring
   gazebo_bridge.yaml: ros_topic_name=/gps/fix_raw  (was /gps/fix)
   this node:          /gps/fix_raw -> /gps/fix     (with quality regime)
 
-Safety: read-only consumer of one Gazebo-bridged topic, publishes a
+Safety: read-only consumer of one simulator-bridged topic, publishes a
 single sensor topic. No drive commands, no TF, no safety topic.
 """
 

@@ -34,7 +34,6 @@ from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
 from webots_ros2_driver.webots_launcher import WebotsLauncher
 from webots_ros2_driver.webots_controller import WebotsController
-from webots_ros2_driver.wait_for_controller_connection import WaitForControllerConnection
 
 
 def generate_launch_description():
@@ -144,12 +143,11 @@ def generate_launch_description():
         arguments=["joint_state_broadcaster"] + controller_manager_timeout,
     )
 
-    # Wait for the Webots driver to register before spawning controllers,
-    # otherwise the spawners time out trying to find the controller_manager.
-    waiting = WaitForControllerConnection(
-        target_driver=mowgli_driver,
-        nodes_to_start=[diffdrive_spawner, joint_state_spawner],
-    )
+    # The controller manager is created by the Webots driver.  The spawner
+    # waits for its services itself, so launch it directly.  In the current
+    # Webots driver this is more reliable than WaitForControllerConnection:
+    # that action may miss an already-connected external controller, leaving
+    # controller_manager running but with no active controllers.
 
     return LaunchDescription(
         [
@@ -160,6 +158,7 @@ def generate_launch_description():
             webots._supervisor,
             rsp_node,
             mowgli_driver,
-            waiting,
+            diffdrive_spawner,
+            joint_state_spawner,
         ]
     )

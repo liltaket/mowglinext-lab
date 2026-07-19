@@ -25,7 +25,7 @@ Wiring
   gazebo_bridge.yaml: ros_topic_name=/wheel_odom_raw  (was /wheel_odom)
   this node:          /wheel_odom_raw -> /wheel_odom
 
-Safety: read-only consumer of one Gazebo-bridged topic, publishes a
+Safety: read-only consumer of one simulator-bridged topic, publishes a
 single sensor topic. No drive commands, no TF, no safety topic.
 """
 

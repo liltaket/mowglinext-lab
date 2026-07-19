@@ -34,7 +34,7 @@ Wiring
 
 Production code stays unchanged. This is sim-side plumbing.
 
-Safety: read-only consumer of one Gazebo-bridged topic, publishes a
+Safety: read-only consumer of one simulator-bridged topic, publishes a
 single sensor topic. No drive commands, no TF, no safety topic.
 """
 
@@ -187,9 +187,18 @@ class SimImuNoise(Node):
             ay = 0.0
             az = 9.80665  # gravity in IMU body Z (robot is upright)
         else:
-            gx = msg.angular_velocity.x + self._gyro_bias[0] + self._rng.gauss(0.0, self._gyro_white)
-            gy = msg.angular_velocity.y + self._gyro_bias[1] + self._rng.gauss(0.0, self._gyro_white)
-            gz = msg.angular_velocity.z + self._gyro_bias[2] + self._rng.gauss(0.0, self._gyro_white)
+            # Ros2IMU already converts orientation and acceleration into the
+            # URDF/ROS frame, but its Gyro device is still reported in the
+            # Webots device axes.  In this model a positive chassis yaw is
+            # exposed as negative Y; publish it as ROS angular Z so the
+            # localisation stack receives the same yaw convention as the
+            # ground-truth pose and wheel odometry.
+            raw_gx = msg.angular_velocity.x
+            raw_gy = msg.angular_velocity.z
+            raw_gz = -msg.angular_velocity.y
+            gx = raw_gx + self._gyro_bias[0] + self._rng.gauss(0.0, self._gyro_white)
+            gy = raw_gy + self._gyro_bias[1] + self._rng.gauss(0.0, self._gyro_white)
+            gz = raw_gz + self._gyro_bias[2] + self._rng.gauss(0.0, self._gyro_white)
 
             ax = msg.linear_acceleration.x + self._accel_bias[0] + self._rng.gauss(0.0, self._accel_white)
             ay = msg.linear_acceleration.y + self._accel_bias[1] + self._rng.gauss(0.0, self._accel_white)

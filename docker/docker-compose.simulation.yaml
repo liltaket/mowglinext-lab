@@ -98,17 +98,17 @@ services:
       context: ..
       dockerfile: ros2/Dockerfile
       target: simulation
-    network_mode: host
     ipc: host
+    ports:
+      - "6080:6080"
+      - "8765:8765"
     environment:
       <<: *ros2-env
       DISPLAY: ":1"
-    command: >
-      bash -c "/ros2_ws/scripts/start_vnc.sh &
-      sleep 3 &&
-      ros2 launch mowgli_bringup sim_full_system.launch.py
-      headless:=false
-      use_rviz:=false"
+      USER: root
+    # start_vnc.sh starts VNC/noVNC and then execs the full simulation launch.
+    # Do not launch sim_full_system.launch.py a second time here.
+    command: ["/bin/bash", "/ros2_ws/scripts/start_vnc.sh"]
     volumes:
       - ./config/cyclonedds.xml:/cyclonedds.xml:ro
       - mowgli_sim_maps:/ros2_ws/maps
