@@ -181,6 +181,45 @@ def generate_launch_description() -> LaunchDescription:
     # default (single source of truth).
     robot_params = load_robot_params(bringup_dir, _runtime_cfg_path)
 
+    # Safety supervisor reads only ROS topics (USB IMU, wheel odometry, final
+    # twist-mux output and bridge status); it never competes for /dev/mowgli.
+    safety_params = {
+        "enabled": bool(robot_params.get("safety_enabled", True)),
+        "shadow_mode": bool(robot_params.get("safety_shadow_mode", True)),
+        "startup_grace_sec": float(robot_params.get("safety_startup_grace_sec", 5.0)),
+        "imu_timeout_sec": float(robot_params.get("safety_imu_timeout_sec", 0.5)),
+        "odom_timeout_sec": float(robot_params.get("safety_odom_timeout_sec", 0.5)),
+        "command_timeout_sec": float(robot_params.get("safety_command_timeout_sec", 0.5)),
+        "trip_on_imu_stale_when_active": bool(robot_params.get("safety_trip_on_imu_stale_when_active", True)),
+        "command_stop_grace_ms": int(robot_params.get("safety_command_stop_grace_ms", 500)),
+        "tilt.absolute_trip_deg": float(robot_params.get("safety_tilt_absolute_trip_deg", 48.0)),
+        "tilt.absolute_trip_duration_ms": int(robot_params.get("safety_tilt_absolute_trip_duration_ms", 250)),
+        "tilt.hard_absolute_trip_deg": float(robot_params.get("safety_tilt_hard_absolute_trip_deg", 68.0)),
+        "tilt.hard_absolute_trip_duration_ms": int(robot_params.get("safety_tilt_hard_absolute_trip_duration_ms", 100)),
+        "tilt.relative_trip_deg": float(robot_params.get("safety_tilt_relative_trip_deg", 30.0)),
+        "tilt.relative_trip_duration_ms": int(robot_params.get("safety_tilt_relative_trip_duration_ms", 350)),
+        "tilt.rapid_tilt_min_deg": float(robot_params.get("safety_tilt_rapid_min_deg", 32.0)),
+        "tilt.rapid_tilt_rate_deg_s": float(robot_params.get("safety_tilt_rapid_rate_deg_s", 110.0)),
+        "tilt.rapid_tilt_confirm_ms": int(robot_params.get("safety_tilt_rapid_confirm_ms", 300)),
+        "tilt.clear_deg": float(robot_params.get("safety_tilt_clear_deg", 22.0)),
+        "tilt.terrain_baseline_tau_sec": float(robot_params.get("safety_tilt_baseline_tau_sec", 4.0)),
+        "tilt.terrain_baseline_max_deg": float(robot_params.get("safety_tilt_baseline_max_deg", 32.0)),
+        "impact.horizontal_accel_trip_mps2": float(robot_params.get("safety_impact_horizontal_accel_trip_mps2", 9.0)),
+        "impact.jerk_trip_mps3": float(robot_params.get("safety_impact_jerk_trip_mps3", 55.0)),
+        "impact.gyro_trip_rad_s": float(robot_params.get("safety_impact_gyro_trip_rad_s", 2.0)),
+        "impact.min_commanded_speed_mps": float(robot_params.get("safety_impact_min_commanded_speed_mps", 0.08)),
+        "impact.min_actual_speed_before_mps": float(robot_params.get("safety_impact_min_actual_speed_mps", 0.07)),
+        "impact.speed_drop_fraction": float(robot_params.get("safety_impact_speed_drop_fraction", 0.70)),
+        "impact.speed_drop_window_ms": int(robot_params.get("safety_impact_speed_drop_window_ms", 300)),
+        "impact.confirmation_window_ms": int(robot_params.get("safety_impact_confirmation_window_ms", 300)),
+        "impact.required_evidence_count": int(robot_params.get("safety_impact_required_evidence_count", 2)),
+        "impact.recovery_window_ms": int(robot_params.get("safety_impact_recovery_window_ms", 450)),
+        "impact.recovered_speed_fraction": float(robot_params.get("safety_impact_recovered_speed_fraction", 0.65)),
+        "filters.imu_median_samples": int(robot_params.get("safety_imu_median_samples", 5)),
+        "filters.gravity_tau_sec": float(robot_params.get("safety_gravity_tau_sec", 0.5)),
+        "filters.wheel_speed_tau_sec": float(robot_params.get("safety_wheel_speed_tau_sec", 0.12)),
+    }
+
     # ------------------------------------------------------------------
     # 1. mowgli.launch.py — hardware bridge, RSP, twist_mux
     # ------------------------------------------------------------------
@@ -206,6 +245,14 @@ def generate_launch_description() -> LaunchDescription:
             "use_sim_time": use_sim_time,
             "use_lidar": use_lidar,
         }.items(),
+    )
+
+    safety_supervisor_node = Node(
+        package="mowgli_safety",
+        executable="safety_supervisor_node",
+        name="safety_supervisor",
+        output="screen",
+        parameters=[safety_params, {"use_sim_time": use_sim_time}],
     )
 
     # ------------------------------------------------------------------
@@ -558,6 +605,7 @@ def generate_launch_description() -> LaunchDescription:
             # Subsystem includes
             mowgli_launch,
             navigation_launch,
+            safety_supervisor_node,
             # Individual nodes
             behavior_tree_node,
             map_server_node,

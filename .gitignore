@@ -11,6 +11,7 @@ __pycache__/
 *.iml
 *.code-workspace
 .DS_Store
+docker/safety-overlay/
 
 # ROS2
 *.bag

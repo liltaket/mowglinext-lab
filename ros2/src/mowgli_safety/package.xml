@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>mowgli_safety</name><version>0.1.0</version>
+  <description>Independent rollover, impact, and sensor-health emergency-stop supervisor.</description>
+  <maintainer email="cedric@mowgli.dev">Cedric</maintainer><license>GPL-3.0</license>
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <depend>rclcpp</depend><depend>sensor_msgs</depend><depend>nav_msgs</depend><depend>geometry_msgs</depend><depend>diagnostic_msgs</depend><depend>mowgli_interfaces</depend>
+  <test_depend>ament_cmake_gtest</test_depend>
+  <export><build_type>ament_cmake</build_type></export>
+</package>

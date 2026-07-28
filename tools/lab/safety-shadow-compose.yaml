@@ -1,0 +1,11 @@
+# Optional, local-only overlay for the first safety-supervisor deployment.
+# Apply this only through tools/lab/deploy_safety_shadow.sh; the normal stack
+# remains unchanged and `./docker/stack.sh up` is the rollback path.
+services:
+  mowgli:
+    volumes:
+      - ${SAFETY_OVERLAY_DIR}:/ros2_ws/safety_overlay:ro
+    command: >
+      bash -lc 'source /ros2_ws/safety_overlay/setup.bash && exec ros2 launch
+      mowgli_bringup full_system.launch.py
+      enable_foxglove:=${ENABLE_FOXGLOVE:-true}'

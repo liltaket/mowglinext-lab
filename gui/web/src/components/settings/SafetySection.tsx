@@ -1,5 +1,5 @@
 import React from "react";
-import { Alert, Card, Col, Form, InputNumber, Row, Typography } from "antd";
+import { Alert, Card, Col, Form, InputNumber, Row, Switch, Typography } from "antd";
 import { WarningOutlined } from "@ant-design/icons";
 import { useTranslation } from "react-i18next";
 
@@ -64,6 +64,21 @@ export const SafetySection: React.FC<Props> = ({ values, onChange }) => {
                                 />
                             </Form.Item>
                         </Col>
+                    </Row>
+                </Form>
+            </Card>
+
+            <Card size="small" title="Rollover and impact detection">
+                <Paragraph type="secondary" style={{ fontSize: 12, marginBottom: 12 }}>
+                    Shadow mode records what would have tripped but never sends an emergency stop. Save and restart the ROS container for these configuration values to take effect; live tuning remains available through ROS parameters.
+                </Paragraph>
+                <Form layout="vertical" size="small">
+                    <Row gutter={[16, 0]}>
+                        <Col xs={12} md={8}><Form.Item label="Supervisor enabled"><Switch checked={values.safety_enabled} onChange={(v) => onChange("safety_enabled", v)} /></Form.Item></Col>
+                        <Col xs={12} md={8}><Form.Item label="Shadow mode"><Switch checked={values.safety_shadow_mode} onChange={(v) => onChange("safety_shadow_mode", v)} /></Form.Item></Col>
+                        <Col xs={12} md={8}><Form.Item label="Trip on active USB IMU loss"><Switch checked={values.safety_trip_on_imu_stale_when_active} onChange={(v) => onChange("safety_trip_on_imu_stale_when_active", v)} /></Form.Item></Col>
+                        <Col xs={12} md={8}><Form.Item label="Rollover trip tilt" tooltip="Higher values reduce false alarms; lower values stop sooner."><InputNumber value={values.safety_tilt_absolute_trip_deg} onChange={(v) => onChange("safety_tilt_absolute_trip_deg", v)} min={1} max={89} step={1} addonAfter="°" style={{ width: "100%" }} /></Form.Item></Col>
+                        <Col xs={12} md={8}><Form.Item label="Impact acceleration" tooltip="Used with speed loss or rotation evidence; this alone does not trip."><InputNumber value={values.safety_impact_horizontal_accel_trip_mps2} onChange={(v) => onChange("safety_impact_horizontal_accel_trip_mps2", v)} min={0.1} max={30} step={0.5} addonAfter="m/s²" style={{ width: "100%" }} /></Form.Item></Col>
                     </Row>
                 </Form>
             </Card>

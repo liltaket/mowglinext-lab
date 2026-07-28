@@ -636,6 +636,40 @@
           "title": "Lift Recovery Mode",
           "default": false,
           "description": "Allow autonomous resume after a lift event (default: stay stopped until operator ack)."
+        },
+        "safety_enabled": {
+          "type": "boolean",
+          "title": "Safety Supervisor Enabled",
+          "default": true,
+          "description": "Start the ROS2 rollover and collision supervisor. Keep enabled during validation."
+        },
+        "safety_shadow_mode": {
+          "type": "boolean",
+          "title": "Safety Supervisor Shadow Mode",
+          "default": true,
+          "description": "Detect and log safety events without requesting an emergency stop. Disable only after supervised validation."
+        },
+        "safety_tilt_absolute_trip_deg": {
+          "type": "number",
+          "title": "Rollover Trip Tilt",
+          "default": 48.0,
+          "minimum": 1.0,
+          "maximum": 89.0,
+          "description": "Sustained chassis tilt in degrees that requests emergency stop when enforcement is enabled. Higher reduces false alarms; lower trips sooner."
+        },
+        "safety_impact_horizontal_accel_trip_mps2": {
+          "type": "number",
+          "title": "Impact Acceleration Threshold",
+          "default": 9.0,
+          "minimum": 0.1,
+          "maximum": 30.0,
+          "description": "Horizontal dynamic acceleration threshold in m/s². It is corroborated with other evidence before an impact trip."
+        },
+        "safety_trip_on_imu_stale_when_active": {
+          "type": "boolean",
+          "title": "Trip on Active USB IMU Loss",
+          "default": true,
+          "description": "Request emergency stop if the external USB IMU becomes stale while the mower is active."
         }
       }
     },

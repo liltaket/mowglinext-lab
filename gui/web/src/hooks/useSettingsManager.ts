@@ -156,6 +156,8 @@ const SECTION_DEFINITIONS: SectionMeta[] = [
         keys: [
             "motor_temp_high_c", "motor_temp_low_c",
             "lift_blade_resume_delay_sec", "lift_recovery_mode",
+            "safety_enabled", "safety_shadow_mode", "safety_tilt_absolute_trip_deg",
+            "safety_impact_horizontal_accel_trip_mps2", "safety_trip_on_imu_stale_when_active",
         ],
     },
     {
