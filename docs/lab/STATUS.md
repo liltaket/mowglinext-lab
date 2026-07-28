@@ -104,3 +104,16 @@ still required.
   `latched=true` with the existing physical-release instruction.
 - This live parameter value is not persistent and returns to the YAML default
   (`safety_shadow_mode: true`) after a ROS container restart.
+
+## 2026-07-28 safety crash repair and conservative blade-off tuning
+
+- A post-test crash of `safety_supervisor` was diagnosed as mixed ROS/system
+  time subtraction in the dedicated diagnostics rate limiter. The repaired
+  node was deployed and verified alive, publishing at approximately 4–5 Hz
+  with enforcement enabled (`shadow_mode=false`).
+- The detector now explicitly reports its `rearmed after stable stop`
+  transition after physical rearm plus two seconds of level, stationary state.
+- Temporary blade-off tuning was applied live: absolute tilt 35 deg, hard tilt
+  50 deg, relative tilt 20 deg, rapid tilt 25 deg at 60 deg/s; impact accel
+  4.5 m/s2, jerk 30 m/s3, gyro 1.2 rad/s, and one required evidence signal.
+  No motion or blade command was issued. These thresholds reset on restart.
