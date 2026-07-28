@@ -7,6 +7,7 @@ namespace mowgli_safety
 {
 SafetyDetector::SafetyDetector(SafetyConfig config) : config_(config) {}
 void SafetyDetector::set_config(const SafetyConfig & config) { config_ = config; }
+DetectorResult SafetyDetector::force_trip(const DetectorInput & input, TripType type, const std::string & reason) { return trip_result(input, type, reason); }
 
 DetectorResult SafetyDetector::trip_result(const DetectorInput & input, TripType type,
   const std::string & reason)

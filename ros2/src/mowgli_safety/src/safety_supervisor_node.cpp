@@ -16,7 +16,7 @@ std::string state_name(SafetyState state) {
   return state == SafetyState::TRIPPED ? "TRIPPED" : state == SafetyState::SUSPECT ? "SUSPECT" : "NORMAL";
 }
 std::string trip_name(TripType type) {
-  return type == TripType::ROLLOVER ? "ROLLOVER" : type == TripType::IMPACT ? "IMPACT" : type == TripType::IMU_STALE ? "IMU_STALE" : "NONE";
+  return type == TripType::ROLLOVER ? "ROLLOVER" : type == TripType::IMPACT ? "IMPACT" : type == TripType::STALL ? "STALL" : type == TripType::IMU_STALE ? "IMU_STALE" : "NONE";
 }
 }  // namespace
 
@@ -67,6 +67,12 @@ SafetySupervisorNode::SafetySupervisorNode() : Node("safety_supervisor"), detect
     [this](mowgli_interfaces::msg::Status::ConstSharedPtr message) { on_status(message); });
   emergency_sub_ = create_subscription<mowgli_interfaces::msg::Emergency>("/hardware_bridge/emergency", 10,
     [this](mowgli_interfaces::msg::Emergency::ConstSharedPtr message) { on_emergency(message); });
+  ground_pose_sub_ = create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>("/gps/pose_cov", 10,
+    [this](geometry_msgs::msg::PoseWithCovarianceStamped::ConstSharedPtr message) { on_ground_pose(message); });
+  stall_min_command_mps_ = declare_parameter("stall.min_command_mps", 0.10);
+  stall_max_displacement_m_ = declare_parameter("stall.max_displacement_m", 0.04);
+  stall_window_s_ = declare_parameter("stall.window_sec", 0.8);
+  stall_max_sigma_m_ = declare_parameter("stall.max_gps_sigma_m", 0.20);
   diagnostics_pub_ = create_publisher<diagnostic_msgs::msg::DiagnosticArray>("/diagnostics", 10);
   safety_diagnostics_pub_ = create_publisher<diagnostic_msgs::msg::DiagnosticArray>(
     "/safety_supervisor/diagnostics", 10);
@@ -83,6 +89,7 @@ void SafetySupervisorNode::on_odom(nav_msgs::msg::Odometry::ConstSharedPtr msg) 
 void SafetySupervisorNode::on_command(geometry_msgs::msg::TwistStamped::ConstSharedPtr msg) { std::lock_guard<std::mutex> lock(mutex_); command_ = msg; last_command_ = now(); }
 void SafetySupervisorNode::on_status(mowgli_interfaces::msg::Status::ConstSharedPtr msg) { std::lock_guard<std::mutex> lock(mutex_); status_ = msg; charging_ = msg->is_charging; mower_active_ = msg->mow_enabled || (!charging_ && command_ && std::abs(command_->twist.linear.x) > 0.02); last_status_ = now(); }
 void SafetySupervisorNode::on_emergency(mowgli_interfaces::msg::Emergency::ConstSharedPtr msg) { std::lock_guard<std::mutex> lock(mutex_); external_emergency_ = msg->active_emergency || msg->latched_emergency; }
+void SafetySupervisorNode::on_ground_pose(geometry_msgs::msg::PoseWithCovarianceStamped::ConstSharedPtr msg) { std::lock_guard<std::mutex> lock(mutex_); ground_pose_ = msg; last_ground_pose_ = now(); }
 
 void SafetySupervisorNode::on_timer()
 {
@@ -117,6 +124,16 @@ void SafetySupervisorNode::on_timer()
     std::hypot(dx, dy), jerk, std::sqrt(g.x*g.x + g.y*g.y + g.z*g.z), odom_->twist.twist.linear.x, command_->twist.linear.x,
     true, mower_active_, charging_};
   auto result = detector_.update(input);
+  if (ground_pose_ && fresh(last_ground_pose_, 1.0) && std::abs(input.commanded_speed_mps) >= stall_min_command_mps_) {
+    const auto & pose = ground_pose_->pose.pose.position;
+    const double sigma = std::sqrt(std::max(ground_pose_->pose.covariance[0], ground_pose_->pose.covariance[7]));
+    if (std::isfinite(sigma) && sigma <= stall_max_sigma_m_) {
+      if (stall_start_s_ < 0.0) { stall_start_s_ = t.seconds(); stall_start_x_ = pose.x; stall_start_y_ = pose.y; }
+      const double displacement = std::hypot(pose.x - stall_start_x_, pose.y - stall_start_y_);
+      if (displacement > stall_max_displacement_m_) { stall_start_s_ = t.seconds(); stall_start_x_ = pose.x; stall_start_y_ = pose.y; }
+      else if (t.seconds() - stall_start_s_ >= stall_window_s_) result = detector_.force_trip(input, TripType::STALL, "commanded motion without ground progress");
+    }
+  } else { stall_start_s_ = -1.0; }
   const bool safe_and_still = input.absolute_tilt_deg < config_.clear_deg &&
                               std::abs(input.actual_speed_mps) < 0.02 &&
                               std::abs(input.commanded_speed_mps) < 0.02;

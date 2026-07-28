@@ -6,6 +6,7 @@
 
 #include "diagnostic_msgs/msg/diagnostic_array.hpp"
 #include "geometry_msgs/msg/twist_stamped.hpp"
+#include "geometry_msgs/msg/pose_with_covariance_stamped.hpp"
 #include "mowgli_interfaces/msg/status.hpp"
 #include "mowgli_interfaces/msg/emergency.hpp"
 #include "mowgli_interfaces/srv/emergency_stop.hpp"
@@ -27,6 +28,7 @@ private:
   void on_command(geometry_msgs::msg::TwistStamped::ConstSharedPtr msg);
   void on_status(mowgli_interfaces::msg::Status::ConstSharedPtr msg);
   void on_emergency(mowgli_interfaces::msg::Emergency::ConstSharedPtr msg);
+  void on_ground_pose(geometry_msgs::msg::PoseWithCovarianceStamped::ConstSharedPtr msg);
   void on_timer();
   void request_emergency();
   void publish_diagnostics(const DetectorResult & result, const std::string & detail);
@@ -41,6 +43,7 @@ private:
   bool service_confirmed_{false}, request_in_flight_{false}, mower_active_{false}, charging_{false}, external_emergency_{false};
   double startup_grace_s_{5.0}, imu_timeout_s_{0.5}, odom_timeout_s_{0.5}, command_timeout_s_{0.5};
   double stable_clear_duration_s_{2.0}, gravity_tau_s_{0.5};
+  double stall_min_command_mps_{0.10}, stall_max_displacement_m_{0.04}, stall_window_s_{0.8}, stall_max_sigma_m_{0.20};
   rclcpp::Time started_, last_imu_, last_odom_, last_command_, last_status_;
   double last_request_s_{-1.0};
   double last_safety_diagnostics_publish_s_{-1.0};
@@ -51,6 +54,9 @@ private:
   nav_msgs::msg::Odometry::ConstSharedPtr odom_;
   geometry_msgs::msg::TwistStamped::ConstSharedPtr command_;
   mowgli_interfaces::msg::Status::ConstSharedPtr status_;
+  geometry_msgs::msg::PoseWithCovarianceStamped::ConstSharedPtr ground_pose_;
+  rclcpp::Time last_ground_pose_;
+  double stall_start_s_{-1.0}, stall_start_x_{0.0}, stall_start_y_{0.0};
   std::deque<double> ax_, ay_, az_, gx_, gy_, gz_;
   double gravity_x_{0.0}, gravity_y_{0.0}, gravity_z_{9.80665}, previous_dynamic_norm_{0.0};
   rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub_;
@@ -58,6 +64,7 @@ private:
   rclcpp::Subscription<geometry_msgs::msg::TwistStamped>::SharedPtr command_sub_;
   rclcpp::Subscription<mowgli_interfaces::msg::Status>::SharedPtr status_sub_;
   rclcpp::Subscription<mowgli_interfaces::msg::Emergency>::SharedPtr emergency_sub_;
+  rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr ground_pose_sub_;
   rclcpp::Publisher<diagnostic_msgs::msg::DiagnosticArray>::SharedPtr diagnostics_pub_;
   rclcpp::Publisher<diagnostic_msgs::msg::DiagnosticArray>::SharedPtr safety_diagnostics_pub_;
   rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr emergency_cmd_pub_;

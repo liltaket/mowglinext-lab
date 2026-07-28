@@ -5,7 +5,7 @@
 namespace mowgli_safety
 {
 enum class SafetyState { NORMAL, SUSPECT, TRIPPED };
-enum class TripType { NONE, ROLLOVER, IMPACT, IMU_STALE };
+enum class TripType { NONE, ROLLOVER, IMPACT, STALL, IMU_STALE };
 
 struct SafetyConfig
 {
@@ -45,6 +45,7 @@ public:
   explicit SafetyDetector(SafetyConfig config = {});
   void set_config(const SafetyConfig & config);
   DetectorResult update(const DetectorInput & input);
+  DetectorResult force_trip(const DetectorInput & input, TripType type, const std::string & reason);
   void reset_if_safe(bool external_emergency_active, bool safe_and_still, double stamp_s,
     double stable_clear_duration_s);
   [[nodiscard]] SafetyState state() const { return state_; }
