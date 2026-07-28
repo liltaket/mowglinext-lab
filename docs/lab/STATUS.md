@@ -27,6 +27,22 @@ correct the physical drive imbalance. The firmware yaw loop cannot be trusted
 until it has a usable gyro input. The first lab experiment is a bounded,
 external-IMU host yaw hold tool.
 
+## External-IMU yaw-hold smoke test
+
+- Date: 2026-07-28.
+- Tool: `tools/lab/external_imu_yaw_hold.py`.
+- Commanded a blade-free, bounded 0.80 m forward run in `RECORDING` mode.
+- Result: stopped automatically at 0.834 m of wheel odometry; wheel-local
+  cross-track was -0.027 m and wheel yaw was -3.71 degrees.
+- The controller completed and published zero velocity before `RECORDING` was
+  cancelled. The mower was subsequently verified `IDLE`, blade-disabled,
+  0 RPM, and clear of active/latched emergency and lift warning.
+
+This proves the external-IMU control path and fail-safe stop path work in a
+short field test. It does **not** establish final gains or a straight-line
+correction: a longer tape-measured run with a physical heading observation is
+still required.
+
 ## Safety state used for field tests
 
 - Tests use BehaviorTree `RECORDING` mode only, then `COMMAND_RECORD_CANCEL`.
