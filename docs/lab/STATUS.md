@@ -92,3 +92,15 @@ still required.
 - The verified sample was `NORMAL`, `trip=NONE`, `shadow_mode=true`, with zero
   impact evidence and no emergency request. Blade status remained disabled at
   0 RPM; no motion or blade command was issued.
+
+## 2026-07-28 live enforcement-mode parameter change
+
+- With explicit owner approval, `shadow_mode` was changed live to `false`
+  while the existing physical emergency remained latched. This was a
+  parameter-only change: no motion, blade, emergency-release, or firmware
+  command was issued.
+- Post-change verification: Safety Supervisor was `NORMAL`, `trip=NONE`,
+  `shadow_mode=false`; `mow_enabled=false`, 0 RPM; emergency was still
+  `latched=true` with the existing physical-release instruction.
+- This live parameter value is not persistent and returns to the YAML default
+  (`safety_shadow_mode: true`) after a ROS container restart.
