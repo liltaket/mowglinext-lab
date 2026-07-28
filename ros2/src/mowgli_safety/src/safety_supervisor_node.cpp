@@ -147,12 +147,16 @@ void SafetySupervisorNode::publish_diagnostics(const DetectorResult & result, co
   status.level = result.state == SafetyState::TRIPPED ? diagnostic_msgs::msg::DiagnosticStatus::ERROR : (shadow_mode_ || result.state == SafetyState::SUSPECT ? diagnostic_msgs::msg::DiagnosticStatus::WARN : diagnostic_msgs::msg::DiagnosticStatus::OK);
   status.message = detail;
   for (const auto & item : std::vector<std::pair<std::string, std::string>>{{"state", state_name(result.state)}, {"shadow_mode", shadow_mode_ ? "true" : "false"}, {"trip", trip_name(result.trip)}, {"impact_evidence_count", std::to_string(result.impact_evidence_count)}, {"emergency_request_confirmed", service_confirmed_ ? "true" : "false"}}) { diagnostic_msgs::msg::KeyValue value; value.key = item.first; value.value = item.second; status.values.push_back(value); }
-  diagnostic_msgs::msg::DiagnosticArray array; array.header.stamp = now(); array.status.push_back(status); diagnostics_pub_->publish(array);
+  const auto publish_time = now();
+  diagnostic_msgs::msg::DiagnosticArray array;
+  array.header.stamp = publish_time;
+  array.status.push_back(status);
+  diagnostics_pub_->publish(array);
   const bool state_changed = result.state != last_safety_diagnostics_state_ ||
                              result.trip != last_safety_diagnostics_trip_ ||
                              detail != last_safety_diagnostics_detail_;
   const bool rate_due = last_safety_diagnostics_publish_.nanoseconds() == 0 ||
-                        (array.header.stamp - last_safety_diagnostics_publish_).seconds() >=
+                        (publish_time - last_safety_diagnostics_publish_).seconds() >=
                           kSafetyDiagnosticsPeriodS;
   if (state_changed || rate_due) {
     safety_diagnostics_pub_->publish(array);
