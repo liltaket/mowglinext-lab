@@ -52,6 +52,7 @@ class ExternalImuYawHold(Node):
             10,
         )
         self.imu_z: float | None = None
+        self.filtered_imu_z: float | None = None
         self.imu_seen_at: float | None = None
         self.wheel: Odometry | None = None
         self.wheel_seen_at: float | None = None
@@ -63,6 +64,10 @@ class ExternalImuYawHold(Node):
 
     def on_imu(self, msg: Imu) -> None:
         self.imu_z = float(msg.angular_velocity.z)
+        alpha = self.args.gyro_filter_alpha
+        self.filtered_imu_z = self.imu_z if self.filtered_imu_z is None else (
+            alpha * self.imu_z + (1.0 - alpha) * self.filtered_imu_z
+        )
         self.imu_seen_at = time.monotonic()
 
     def on_wheel(self, msg: Odometry) -> None:
@@ -135,7 +140,7 @@ class ExternalImuYawHold(Node):
             ok, reason = self.guarded()
             if not ok:
                 raise RuntimeError(f"stopping: {reason}")
-            assert self.wheel is not None and self.imu_z is not None
+            assert self.wheel is not None and self.filtered_imu_z is not None
             current = self.wheel.pose.pose.position
             distance = math.hypot(current.x - start.x, current.y - start.y)
             if distance >= self.args.distance_m:
@@ -145,7 +150,7 @@ class ExternalImuYawHold(Node):
             self.last_control_at = now
             # External bridge documents +Z as CCW/left. A positive measured
             # rate therefore needs a negative/right command to hold heading.
-            rate_error = -self.imu_z
+            rate_error = -self.filtered_imu_z
             self.integral = clamp(
                 self.integral + rate_error * dt,
                 -self.args.integral_limit,
@@ -184,6 +189,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--ki", type=float, default=0.35)
     parser.add_argument("--max-wz-rad-s", type=float, default=0.25)
     parser.add_argument("--integral-limit", type=float, default=0.35)
+    parser.add_argument("--gyro-filter-alpha", type=float, default=0.35,
+                        help="EMA weight for external gyro rate")
     parser.add_argument("--ramp-s", type=float, default=1.5)
     parser.add_argument("--max-imu-age-s", type=float, default=0.35)
     parser.add_argument("--max-wheel-age-s", type=float, default=0.35)

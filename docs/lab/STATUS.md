@@ -43,6 +43,23 @@ short field test. It does **not** establish final gains or a straight-line
 correction: a longer tape-measured run with a physical heading observation is
 still required.
 
+## 2026-07-28 handoff: external-IMU tuning
+
+- The USB flight-controller IMU bridge was changed on the mower from 8.9 Hz to
+  a stable 23.8 Hz by reducing its MSP serial-read timeout. The live bridge is
+  a local replacement container named `mowgli-fc-imu-fast`; its predecessor is
+  retained stopped as `mowgli-fc-imu`.
+- Bounded, blade-free 5 m tests used `RECORDING` mode only. The most stable
+  tested yaw-hold settings were `kp=0.5`, `ki=0`, and `max_wz_rad_s=0.08`.
+- Wheel odometry disagreed with field observation about turn direction during
+  trim experiments. Do not use wheel yaw alone for trim direction; record and
+  compare `/odometry/filtered_map`, `/gps/fix`, and `/gps/pose_cov`.
+- The temporary constant-trim experiment was removed from the lab tool. The
+  tool retains only filtered gyro-rate feedback (`gyro_filter_alpha`, default
+  0.35) and its existing blade-off/fresh-data guards.
+- No appliance credentials, IP addresses, NTRIP values, or bag files are in
+  this repository. Live bags remain under `/tmp` on the mower.
+
 ## Safety state used for field tests
 
 - Tests use BehaviorTree `RECORDING` mode only, then `COMMAND_RECORD_CANCEL`.
