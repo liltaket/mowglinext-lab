@@ -67,3 +67,17 @@ still required.
 - No active or latched emergency; lift warning clear.
 - All test tools must publish zero velocity in `finally` and use a bounded
   distance and time.
+
+## 2026-07-28 safety-supervisor shadow deployment
+
+- The isolated `mowgli_safety` + `mowgli_bringup` overlay was built on the
+  Raspberry Pi from the lab branch and mounted over the normal runtime image.
+- `/safety_supervisor` is running with `shadow_mode=true`. Its first live
+  diagnostic was `NORMAL`, with zero impact evidence and no emergency request.
+- Deployment preflight was blade-disabled, 0 RPM, no active/latched emergency,
+  and no lift warning. No motion or blade command was issued for this deploy.
+- After the ROS container restart, `/hardware_bridge/status` reported
+  `firmware_compatible=false` while still reporting firmware `129.8.131` and
+  protocol `5`. Treat this as a fail-closed preflight blocker: do not enable
+  motion or change safety enforcement until the existing bridge handshake is
+  understood and returns compatible again.
