@@ -10,6 +10,7 @@ namespace mowgli_safety
 namespace
 {
 constexpr double kGravity = 9.80665;
+constexpr double kSafetyDiagnosticsPeriodS = 0.2;
 bool finite(double value) { return std::isfinite(value); }
 std::string state_name(SafetyState state) {
   return state == SafetyState::TRIPPED ? "TRIPPED" : state == SafetyState::SUSPECT ? "SUSPECT" : "NORMAL";
@@ -67,6 +68,8 @@ SafetySupervisorNode::SafetySupervisorNode() : Node("safety_supervisor"), detect
   emergency_sub_ = create_subscription<mowgli_interfaces::msg::Emergency>("/hardware_bridge/emergency", 10,
     [this](mowgli_interfaces::msg::Emergency::ConstSharedPtr message) { on_emergency(message); });
   diagnostics_pub_ = create_publisher<diagnostic_msgs::msg::DiagnosticArray>("/diagnostics", 10);
+  safety_diagnostics_pub_ = create_publisher<diagnostic_msgs::msg::DiagnosticArray>(
+    "/safety_supervisor/diagnostics", 10);
   emergency_cmd_pub_ = create_publisher<geometry_msgs::msg::TwistStamped>("/cmd_vel_emergency", 10);
   emergency_client_ = create_client<mowgli_interfaces::srv::EmergencyStop>("/hardware_bridge/emergency_stop");
   parameter_callback_ = add_on_set_parameters_callback([this](const auto & p) { return on_parameters(p); });
@@ -145,6 +148,19 @@ void SafetySupervisorNode::publish_diagnostics(const DetectorResult & result, co
   status.message = detail;
   for (const auto & item : std::vector<std::pair<std::string, std::string>>{{"state", state_name(result.state)}, {"shadow_mode", shadow_mode_ ? "true" : "false"}, {"trip", trip_name(result.trip)}, {"impact_evidence_count", std::to_string(result.impact_evidence_count)}, {"emergency_request_confirmed", service_confirmed_ ? "true" : "false"}}) { diagnostic_msgs::msg::KeyValue value; value.key = item.first; value.value = item.second; status.values.push_back(value); }
   diagnostic_msgs::msg::DiagnosticArray array; array.header.stamp = now(); array.status.push_back(status); diagnostics_pub_->publish(array);
+  const bool state_changed = result.state != last_safety_diagnostics_state_ ||
+                             result.trip != last_safety_diagnostics_trip_ ||
+                             detail != last_safety_diagnostics_detail_;
+  const bool rate_due = last_safety_diagnostics_publish_.nanoseconds() == 0 ||
+                        (array.header.stamp - last_safety_diagnostics_publish_).seconds() >=
+                          kSafetyDiagnosticsPeriodS;
+  if (state_changed || rate_due) {
+    safety_diagnostics_pub_->publish(array);
+    last_safety_diagnostics_publish_ = array.header.stamp;
+    last_safety_diagnostics_state_ = result.state;
+    last_safety_diagnostics_trip_ = result.trip;
+    last_safety_diagnostics_detail_ = detail;
+  }
 }
 
 rcl_interfaces::msg::SetParametersResult SafetySupervisorNode::on_parameters(const std::vector<rclcpp::Parameter> & parameters)

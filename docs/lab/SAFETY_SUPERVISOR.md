@@ -11,7 +11,7 @@ The safety supervisor uses the Raspberry Pi USB IMU at `/imu/data`, `/wheel_odom
 ```bash
 ros2 node list | grep safety_supervisor
 ros2 param get /safety_supervisor shadow_mode
-ros2 topic echo /diagnostics --once
+ros2 topic echo /safety_supervisor/diagnostics --once
 ```
 
 4. Record a bag during representative flat grass, slope, stop, turn, bump, and blade-off controlled tests:
@@ -22,6 +22,14 @@ ros2 bag record /imu/data /wheel_odom /cmd_vel /hardware_bridge/status \
 ```
 
 5. Review every `Safety Supervisor` warning. A candidate is expected to remain a diagnostic event in shadow mode; no `/hardware_bridge/emergency_stop` request may be made.
+
+### Foxglove safety view
+
+Use `/safety_supervisor/diagnostics`, not the shared `/diagnostics` topic, in a
+Foxglove Raw Messages panel. It carries only the Safety Supervisor status at
+5 Hz while normal, and publishes immediately when its state, trip type, or
+reason changes. The shared `/diagnostics` topic remains available for system
+health and is intentionally published by multiple nodes.
 
 ### Pi without the lab fork
 

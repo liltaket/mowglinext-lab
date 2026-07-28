@@ -2,6 +2,7 @@
 
 #include <deque>
 #include <mutex>
+#include <string>
 
 #include "diagnostic_msgs/msg/diagnostic_array.hpp"
 #include "geometry_msgs/msg/twist_stamped.hpp"
@@ -41,6 +42,10 @@ private:
   double startup_grace_s_{5.0}, imu_timeout_s_{0.5}, odom_timeout_s_{0.5}, command_timeout_s_{0.5};
   double stable_clear_duration_s_{2.0}, gravity_tau_s_{0.5};
   rclcpp::Time started_, last_imu_, last_odom_, last_command_, last_status_, last_request_;
+  rclcpp::Time last_safety_diagnostics_publish_;
+  SafetyState last_safety_diagnostics_state_{SafetyState::NORMAL};
+  TripType last_safety_diagnostics_trip_{TripType::NONE};
+  std::string last_safety_diagnostics_detail_;
   sensor_msgs::msg::Imu::ConstSharedPtr imu_;
   nav_msgs::msg::Odometry::ConstSharedPtr odom_;
   geometry_msgs::msg::TwistStamped::ConstSharedPtr command_;
@@ -53,6 +58,7 @@ private:
   rclcpp::Subscription<mowgli_interfaces::msg::Status>::SharedPtr status_sub_;
   rclcpp::Subscription<mowgli_interfaces::msg::Emergency>::SharedPtr emergency_sub_;
   rclcpp::Publisher<diagnostic_msgs::msg::DiagnosticArray>::SharedPtr diagnostics_pub_;
+  rclcpp::Publisher<diagnostic_msgs::msg::DiagnosticArray>::SharedPtr safety_diagnostics_pub_;
   rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr emergency_cmd_pub_;
   rclcpp::Client<mowgli_interfaces::srv::EmergencyStop>::SharedPtr emergency_client_;
   rclcpp::TimerBase::SharedPtr timer_;
