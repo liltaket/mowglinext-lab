@@ -127,9 +127,8 @@ class ExternalImuYawHold(Node):
         started_at = time.monotonic()
         self.last_control_at = started_at
         self.get_logger().info(
-            "Starting bounded yaw-hold test: %.2f m at <= %.2f m/s",
-            self.args.distance_m,
-            self.args.speed_mps,
+            f"Starting bounded yaw-hold test: {self.args.distance_m:.2f} m "
+            f"at <= {self.args.speed_mps:.2f} m/s"
         )
         while time.monotonic() - started_at < self.args.max_duration_s:
             rclpy.spin_once(self, timeout_sec=0.02)
@@ -170,8 +169,8 @@ class ExternalImuYawHold(Node):
         local_y = -math.sin(start_yaw) * dx + math.cos(start_yaw) * dy
         yaw_deg = math.degrees(math.atan2(math.sin(end_yaw - start_yaw), math.cos(end_yaw - start_yaw)))
         self.get_logger().info(
-            "RESULT distance=%.3f m local_x=%.3f m local_y=%.3f m wheel_yaw=%.2f deg",
-            math.hypot(dx, dy), local_x, local_y, yaw_deg,
+            f"RESULT distance={math.hypot(dx, dy):.3f} m local_x={local_x:.3f} m "
+            f"local_y={local_y:.3f} m wheel_yaw={yaw_deg:.2f} deg"
         )
 
 
