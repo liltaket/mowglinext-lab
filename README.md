@@ -76,6 +76,13 @@ A fully autonomous mowing stack running on real hardware: undock, navigate to zo
 
 See the **[Architecture wiki page](https://github.com/mowglinext/mowglinext/wiki/Architecture)** for full system design and data flow.
 
+## Lab fork
+
+The shared experimental workflow, hardware notes, and bounded field-test tools
+for this fork are documented in [LAB.md](LAB.md). Production-ready fixes stay
+small and can be proposed back to the upstream project as focused pull
+requests.
+
 ## Dashboard
 
 <p align="center">
