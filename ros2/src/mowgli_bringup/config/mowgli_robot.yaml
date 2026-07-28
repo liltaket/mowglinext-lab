@@ -125,13 +125,13 @@ mowgli:
     tool_width: 0.18           # effective cut width (2 × blade_radius)
 
     # -----------------------------------------------------------------
-    # Safety supervisor (USB IMU + wheel odometry; shadow mode is the safe
-    # default until replay and supervised blade-off field validation agree).
+    # Safety supervisor (USB IMU + wheel odometry). Enforcement is enabled
+    # after supervised blade-off field validation.
     # Higher trip values reduce false positives but delay a trip; lower values
     # are more sensitive to impacts/rollover. Units are encoded in each name.
     # -----------------------------------------------------------------
     safety_enabled: true
-    safety_shadow_mode: true
+    safety_shadow_mode: false
     safety_startup_grace_sec: 5.0
     safety_imu_timeout_sec: 0.5
     safety_odom_timeout_sec: 0.5

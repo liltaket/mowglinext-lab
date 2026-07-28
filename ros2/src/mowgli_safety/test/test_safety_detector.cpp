@@ -7,3 +7,13 @@ TEST(SafetyDetector, SustainedAbsoluteTiltTrips) { SafetyDetector d; for(int i=0
 TEST(SafetyDetector, CommandedStopSuppressesImpact) { SafetyDetector d; auto moving=sample(0); d.update(moving); auto stop=sample(.1); stop.commanded_speed_mps=0; stop.actual_speed_mps=0; stop.horizontal_accel_mps2=20; stop.gyro_norm_rad_s=3; EXPECT_NE(d.update(stop).state, SafetyState::TRIPPED); }
 TEST(SafetyDetector, CorroboratedImpactTrips) { SafetyDetector d; d.update(sample(0)); auto hit=sample(.1); hit.actual_speed_mps=.01; hit.horizontal_accel_mps2=15; EXPECT_EQ(d.update(hit).trip, TripType::IMPACT); }
 TEST(SafetyDetector, ChargingTiltDoesNotTrip) { SafetyDetector d; for(int i=0;i<20;++i) { auto x=sample(i*.05); x.charging=true; x.absolute_tilt_deg=60; EXPECT_NE(d.update(x).state, SafetyState::TRIPPED); } }
+TEST(SafetyDetector, RearmClearsOnlyAfterExternalEmergencyAndStableStop) {
+  SafetyDetector d;
+  for (int i = 0; i < 8; ++i) { auto x = sample(i * .05); x.absolute_tilt_deg = 55; d.update(x); }
+  EXPECT_EQ(d.state(), SafetyState::TRIPPED);
+  d.reset_if_safe(true, true, 1.0, 2.0);
+  EXPECT_EQ(d.state(), SafetyState::TRIPPED);
+  d.reset_if_safe(false, true, 1.0, 2.0);
+  d.reset_if_safe(false, true, 3.1, 2.0);
+  EXPECT_EQ(d.state(), SafetyState::NORMAL);
+}

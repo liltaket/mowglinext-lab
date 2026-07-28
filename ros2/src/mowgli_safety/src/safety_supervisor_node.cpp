@@ -121,6 +121,10 @@ void SafetySupervisorNode::on_timer()
                               std::abs(input.actual_speed_mps) < 0.02 &&
                               std::abs(input.commanded_speed_mps) < 0.02;
   detector_.reset_if_safe(external_emergency_, safe_and_still, t.seconds(), stable_clear_duration_s_);
+  if (result.state == SafetyState::TRIPPED && detector_.state() == SafetyState::NORMAL) {
+    result = {SafetyState::NORMAL, TripType::NONE, result.relative_tilt_deg, 0,
+              "rearmed after stable stop"};
+  }
   if (detector_.state() == SafetyState::NORMAL && !external_emergency_) service_confirmed_ = false;
   publish_diagnostics(result, result.reason);
   if (result.state == SafetyState::TRIPPED) { RCLCPP_ERROR(get_logger(), "Safety trip: %s (%s)", trip_name(result.trip).c_str(), result.reason.c_str()); if (!shadow_mode_) request_emergency(); }
@@ -155,12 +159,12 @@ void SafetySupervisorNode::publish_diagnostics(const DetectorResult & result, co
   const bool state_changed = result.state != last_safety_diagnostics_state_ ||
                              result.trip != last_safety_diagnostics_trip_ ||
                              detail != last_safety_diagnostics_detail_;
-  const bool rate_due = last_safety_diagnostics_publish_.nanoseconds() == 0 ||
-                        (publish_time - last_safety_diagnostics_publish_).seconds() >=
+  const bool rate_due = last_safety_diagnostics_publish_s_ < 0.0 ||
+                        publish_time.seconds() - last_safety_diagnostics_publish_s_ >=
                           kSafetyDiagnosticsPeriodS;
   if (state_changed || rate_due) {
     safety_diagnostics_pub_->publish(array);
-    last_safety_diagnostics_publish_ = array.header.stamp;
+    last_safety_diagnostics_publish_s_ = publish_time.seconds();
     last_safety_diagnostics_state_ = result.state;
     last_safety_diagnostics_trip_ = result.trip;
     last_safety_diagnostics_detail_ = detail;
