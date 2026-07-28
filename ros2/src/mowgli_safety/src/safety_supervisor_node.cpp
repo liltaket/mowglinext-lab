@@ -116,7 +116,7 @@ void SafetySupervisorNode::on_timer()
   DetectorInput input{t.seconds(), std::hypot(roll, pitch) * 180.0 / M_PI, g.x * 180.0 / M_PI, g.y * 180.0 / M_PI,
     std::hypot(dx, dy), jerk, std::sqrt(g.x*g.x + g.y*g.y + g.z*g.z), odom_->twist.twist.linear.x, command_->twist.linear.x,
     true, mower_active_, charging_};
-  const auto result = detector_.update(input);
+  auto result = detector_.update(input);
   const bool safe_and_still = input.absolute_tilt_deg < config_.clear_deg &&
                               std::abs(input.actual_speed_mps) < 0.02 &&
                               std::abs(input.commanded_speed_mps) < 0.02;
