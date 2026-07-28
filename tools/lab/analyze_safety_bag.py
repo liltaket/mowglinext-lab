@@ -27,6 +27,7 @@ def main(path):
     types = {x.name: get_message(x.type) for x in reader.get_all_topics_and_types()}
     acc_h, acc_norm, gyro, roll, pitch, wheel, command = [], [], [], [], [], [], []
     gps = []
+    diagnostics = []
     while reader.has_next():
         topic, raw, stamp = reader.read_next()
         msg = deserialize_message(raw, types[topic])
@@ -43,6 +44,12 @@ def main(path):
         elif topic == "/gps/pose_cov":
             p = msg.pose.pose.position; c = msg.pose.covariance
             gps.append((stamp / 1e9, p.x, p.y, math.sqrt(max(c[0], c[7]))))
+        elif topic == "/safety_supervisor/diagnostics":
+            for status in msg.status:
+                if status.hardware_id == "mowgli/safety_supervisor":
+                    values = {x.key: x.value for x in status.values}
+                    diagnostics.append({"stamp_s": stamp / 1e9, "state": values.get("state"),
+                                        "trip": values.get("trip"), "message": status.message})
     gps_step = []
     for a, b in zip(gps, gps[1:]):
         dt = b[0] - a[0]
@@ -50,7 +57,10 @@ def main(path):
     result = {"imu_horizontal_accel_mps2": summary(acc_h), "imu_accel_norm_mps2": summary(acc_norm),
               "gyro_norm_rad_s": summary(gyro), "roll_deg": summary(roll), "pitch_deg": summary(pitch),
               "wheel_speed_mps": summary(wheel), "command_speed_mps": summary(command),
-              "gps_sigma_m": summary([x[3] for x in gps]), "gps_step_speed_mps": summary(gps_step)}
+              "gps_sigma_m": summary([x[3] for x in gps]), "gps_step_speed_mps": summary(gps_step),
+              "safety_events": [x for i, x in enumerate(diagnostics)
+                                if i == 0 or (x["state"], x["trip"], x["message"]) !=
+                                (diagnostics[i - 1]["state"], diagnostics[i - 1]["trip"], diagnostics[i - 1]["message"])]}
     print(json.dumps(result, indent=2, sort_keys=True))
 
 
