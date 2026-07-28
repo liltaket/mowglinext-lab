@@ -81,3 +81,14 @@ still required.
   protocol `5`. Treat this as a fail-closed preflight blocker: do not enable
   motion or change safety enforcement until the existing bridge handshake is
   understood and returns compatible again.
+
+## 2026-07-28 dedicated safety diagnostics deployment
+
+- `/safety_supervisor/diagnostics` was deployed as a dedicated Foxglove topic,
+  separate from the high-volume shared `/diagnostics` stream.
+- Live verification found one publisher (`/safety_supervisor`) and a stable
+  approximately 4–5 Hz normal-state rate. Safety state/trip/reason changes are
+  published immediately.
+- The verified sample was `NORMAL`, `trip=NONE`, `shadow_mode=true`, with zero
+  impact evidence and no emergency request. Blade status remained disabled at
+  0 RPM; no motion or blade command was issued.
