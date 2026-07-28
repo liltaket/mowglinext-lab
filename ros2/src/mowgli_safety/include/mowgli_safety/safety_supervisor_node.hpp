@@ -41,7 +41,8 @@ private:
   bool service_confirmed_{false}, request_in_flight_{false}, mower_active_{false}, charging_{false}, external_emergency_{false};
   double startup_grace_s_{5.0}, imu_timeout_s_{0.5}, odom_timeout_s_{0.5}, command_timeout_s_{0.5};
   double stable_clear_duration_s_{2.0}, gravity_tau_s_{0.5};
-  rclcpp::Time started_, last_imu_, last_odom_, last_command_, last_status_, last_request_;
+  rclcpp::Time started_, last_imu_, last_odom_, last_command_, last_status_;
+  double last_request_s_{-1.0};
   double last_safety_diagnostics_publish_s_{-1.0};
   SafetyState last_safety_diagnostics_state_{SafetyState::NORMAL};
   TripType last_safety_diagnostics_trip_{TripType::NONE};

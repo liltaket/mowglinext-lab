@@ -132,9 +132,11 @@ void SafetySupervisorNode::on_timer()
 
 void SafetySupervisorNode::request_emergency()
 {
-  if (service_confirmed_ || request_in_flight_ || (now() - last_request_).seconds() < 0.1) return;
-  geometry_msgs::msg::TwistStamped zero; zero.header.stamp = now(); emergency_cmd_pub_->publish(zero);
-  last_request_ = now();
+  const auto request_time = now();
+  if (service_confirmed_ || request_in_flight_ ||
+      (last_request_s_ >= 0.0 && request_time.seconds() - last_request_s_ < 0.1)) return;
+  geometry_msgs::msg::TwistStamped zero; zero.header.stamp = request_time; emergency_cmd_pub_->publish(zero);
+  last_request_s_ = request_time.seconds();
   if (!emergency_client_->service_is_ready()) { RCLCPP_ERROR_THROTTLE(get_logger(), *get_clock(), 1000, "Emergency service unavailable; retrying"); return; }
   request_in_flight_ = true; auto request = std::make_shared<mowgli_interfaces::srv::EmergencyStop::Request>(); request->emergency = 1;
   emergency_client_->async_send_request(request,
