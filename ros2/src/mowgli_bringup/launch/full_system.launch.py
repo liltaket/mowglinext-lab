@@ -218,6 +218,10 @@ def generate_launch_description() -> LaunchDescription:
         "filters.imu_median_samples": int(robot_params.get("safety_imu_median_samples", 5)),
         "filters.gravity_tau_sec": float(robot_params.get("safety_gravity_tau_sec", 0.5)),
         "filters.wheel_speed_tau_sec": float(robot_params.get("safety_wheel_speed_tau_sec", 0.12)),
+        "stall.min_command_mps": float(robot_params.get("safety_stall_min_command_mps", 0.10)),
+        "stall.max_displacement_m": float(robot_params.get("safety_stall_max_displacement_m", 0.04)),
+        "stall.window_sec": float(robot_params.get("safety_stall_window_sec", 0.8)),
+        "stall.max_gps_sigma_m": float(robot_params.get("safety_stall_max_gps_sigma_m", 0.40)),
     }
 
     # ------------------------------------------------------------------

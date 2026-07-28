@@ -138,21 +138,21 @@ mowgli:
     safety_command_timeout_sec: 0.5
     safety_trip_on_imu_stale_when_active: true
     safety_command_stop_grace_ms: 500
-    safety_tilt_absolute_trip_deg: 48.0
-    safety_tilt_absolute_trip_duration_ms: 250
-    safety_tilt_hard_absolute_trip_deg: 68.0
-    safety_tilt_hard_absolute_trip_duration_ms: 100
-    safety_tilt_relative_trip_deg: 30.0
-    safety_tilt_relative_trip_duration_ms: 350
-    safety_tilt_rapid_min_deg: 32.0
-    safety_tilt_rapid_rate_deg_s: 110.0
-    safety_tilt_rapid_confirm_ms: 300
-    safety_tilt_clear_deg: 22.0
+    safety_tilt_absolute_trip_deg: 20.0
+    safety_tilt_absolute_trip_duration_ms: 200
+    safety_tilt_hard_absolute_trip_deg: 30.0
+    safety_tilt_hard_absolute_trip_duration_ms: 80
+    safety_tilt_relative_trip_deg: 16.0
+    safety_tilt_relative_trip_duration_ms: 250
+    safety_tilt_rapid_min_deg: 18.0
+    safety_tilt_rapid_rate_deg_s: 75.0
+    safety_tilt_rapid_confirm_ms: 200
+    safety_tilt_clear_deg: 12.0
     safety_tilt_baseline_tau_sec: 4.0
     safety_tilt_baseline_max_deg: 32.0
-    safety_impact_horizontal_accel_trip_mps2: 9.0
-    safety_impact_jerk_trip_mps3: 55.0
-    safety_impact_gyro_trip_rad_s: 2.0
+    safety_impact_horizontal_accel_trip_mps2: 5.0
+    safety_impact_jerk_trip_mps3: 35.0
+    safety_impact_gyro_trip_rad_s: 1.5
     safety_impact_min_commanded_speed_mps: 0.08
     safety_impact_min_actual_speed_mps: 0.07
     safety_impact_speed_drop_fraction: 0.70
@@ -164,6 +164,10 @@ mowgli:
     safety_imu_median_samples: 5
     safety_gravity_tau_sec: 0.5
     safety_wheel_speed_tau_sec: 0.12
+    safety_stall_min_command_mps: 0.10
+    safety_stall_max_displacement_m: 0.04
+    safety_stall_window_sec: 0.8
+    safety_stall_max_gps_sigma_m: 0.40
 
     # -----------------------------------------------------------------
     # Lidar mount position / orientation (relative to base_link)

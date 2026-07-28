@@ -117,3 +117,15 @@ still required.
   50 deg, relative tilt 20 deg, rapid tilt 25 deg at 60 deg/s; impact accel
   4.5 m/s2, jerk 30 m/s3, gyro 1.2 rad/s, and one required evidence signal.
   No motion or blade command was issued. These thresholds reset on restart.
+
+## 2026-07-28 bag-derived enforcement calibration
+
+- A 363 s normal-mowing bag and a 145 s event bag were analysed. Normal tilt
+  remained within 10 deg, while deliberate events reached 29 deg pitch / 33
+  deg roll, 7.12 m/s2 horizontal acceleration, and 2.31 rad/s gyro.
+- Persistent enforcement defaults: shadow mode off; 20 deg absolute tilt, 30
+  deg hard tilt, 16 deg relative tilt; impact requires two signals with 5.0
+  m/s2 acceleration, 35 m/s3 jerk, or 1.5 rad/s gyro.
+- GPS-ground-progress stall detection is enabled at command >=0.10 m/s, less
+  than 4 cm progress for 0.8 s, and GPS sigma <=0.40 m. Wheel odometry is not
+  used as ground-truth because wheels can spin while blocked.
