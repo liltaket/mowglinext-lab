@@ -126,8 +126,8 @@ TEST(DockMotionGate, NoDockRobotIsEnteredWhilePublishingIdle)
       {
         violations.push_back(
             "DockRobot at line " + std::to_string(line_no) +
-            " is entered while publishing state=1 (IDLE) as '" + last.state_name +
-            "' at line " + std::to_string(last.line) +
+            " is entered while publishing state=1 (IDLE) as '" + last.state_name + "' at line " +
+            std::to_string(last.line) +
             "; the firmware hard-stops the wheels in IDLE so this dock can never drive");
       }
     }
