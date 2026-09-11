@@ -1,0 +1,23 @@
+cmake_minimum_required(VERSION 3.16)
+
+# This file intentionally replaces universal-gnss/gnss_ros2/CMakeLists.txt
+# only in the foxglove schema overlay. Keep package.xml and the .msg/.srv
+# sources copied verbatim from the pinned submodule; do not build its driver
+# libraries or executables here.
+project(universal_gnss_ros2)
+
+find_package(ament_cmake REQUIRED)
+find_package(builtin_interfaces REQUIRED)
+find_package(diagnostic_msgs REQUIRED)
+find_package(rosidl_default_generators REQUIRED)
+
+rosidl_generate_interfaces(
+  ${PROJECT_NAME}
+  "msg/GnssStatus.msg"
+  "msg/RtcmFrame.msg"
+  "srv/GetReceiverSnapshot.srv"
+  DEPENDENCIES builtin_interfaces diagnostic_msgs
+)
+
+ament_export_dependencies(rosidl_default_runtime)
+ament_package()
