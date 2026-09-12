@@ -380,6 +380,15 @@ if(BUILD_TESTING)
     ${CMAKE_CURRENT_SOURCE_DIR}/include
   )
 
+  # ---- test_gravity_estimator ----
+  # Pure C++ regression test for the costmap IMU gravity gate.
+  ament_add_gtest(test_gravity_estimator
+    test/test_gravity_estimator.cpp
+  )
+  target_include_directories(test_gravity_estimator PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+  )
+
   # ---- test_robot_yaml_scalar ----
   # Guards the ONE canonical dock_pose persist path (Invariant 6): the
   # motion-derived (yaw_source=MOTION) write must splice only the dock_pose_*
