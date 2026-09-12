@@ -361,7 +361,7 @@ inline std::vector<Rgb> RenderFrame(const LedInputs& in, const LedPatternCfg& cf
       if (in.battery_percent >= cfg.charge_full_percent)
       {
         const bool gone_dim = cfg.charge_complete_timeout_s > 0.0 &&
-                               in.charge_complete_elapsed_s >= cfg.charge_complete_timeout_s;
+                              in.charge_complete_elapsed_s >= cfg.charge_complete_timeout_s;
         const Rgb frame =
             gone_dim ? Dim(colors::kGreen, cfg.charge_complete_dim_scale) : colors::kGreen;
         std::fill(pixels.begin(), pixels.end(), frame);

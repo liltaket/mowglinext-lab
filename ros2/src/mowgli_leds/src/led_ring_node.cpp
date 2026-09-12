@@ -322,8 +322,8 @@ void LedRingNode::blank()
 
 void LedRingNode::updateChargeCompleteTracking(LedInputs& in)
 {
-  const bool charge_complete_now = in.is_charging && in.battery_valid &&
-                                    in.battery_percent >= pattern_cfg_.charge_full_percent;
+  const bool charge_complete_now =
+      in.is_charging && in.battery_valid && in.battery_percent >= pattern_cfg_.charge_full_percent;
   if (!charge_complete_now)
   {
     // Unplugged, or the level fell back below the threshold: the ring must

@@ -393,8 +393,7 @@ TEST(LedPatternRender, ChargeCompleteDimsToOffAfterTheTimeoutByDefault)
   in.charge_complete_elapsed_s = 600.0;  // exactly the 600 s default timeout
 
   const auto pixels = RenderFrame(in, MakeCfg());
-  EXPECT_EQ(CountLit(pixels), 0u)
-      << "charge_complete_dim_scale defaults to 0, i.e. fully off";
+  EXPECT_EQ(CountLit(pixels), 0u) << "charge_complete_dim_scale defaults to 0, i.e. fully off";
 }
 
 TEST(LedPatternRender, ChargeCompleteDimScaleKeepsAFaintIndicatorInstead)
