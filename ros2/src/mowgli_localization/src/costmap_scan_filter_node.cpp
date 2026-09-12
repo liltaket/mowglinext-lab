@@ -110,7 +110,10 @@ public:
     min_ground_run_ = declare_parameter<int>("min_ground_run", 8);
     imu_max_age_s_ = declare_parameter<double>("imu_max_age_s", 0.5);
     accel_g_tolerance_ms2_ = declare_parameter<double>("accel_g_tolerance_ms2", 3.0);
-    gravity_estimator_ = GravityEstimator(GravityEstimatorConfig{accel_g_tolerance_ms2_});
+    GravityEstimatorConfig gravity_estimator_config;
+    gravity_estimator_config.accel_g_tolerance_ms2 = accel_g_tolerance_ms2_;
+    gravity_estimator_config.candidate_max_gap_s = imu_max_age_s_;
+    gravity_estimator_ = GravityEstimator(gravity_estimator_config);
     const std::string input_topic = declare_parameter<std::string>("input_topic", "/scan");
     const std::string output_topic =
         declare_parameter<std::string>("output_topic", "/scan_costmap");
@@ -352,13 +355,17 @@ private:
     last_imu_stamp_ = sample_time;
     if (action == GravityEstimatorAction::RESEEDED)
     {
-      RCLCPP_INFO_THROTTLE(
-          get_logger(),
-          *get_clock(),
-          5000,
-          "ground filter IMU baseline re-seeded at %.3f m/s² after stable out-of-band "
-          "acceleration",
-          gravity_estimator_.baseline_magnitude_ms2());
+      const double old_baseline = gravity_estimator_.previous_baseline_magnitude_ms2();
+      const double new_baseline = gravity_estimator_.baseline_magnitude_ms2();
+      const double absolute_change = std::abs(new_baseline - old_baseline);
+      const double percentage_change = 100.0 * absolute_change / old_baseline;
+      RCLCPP_WARN(get_logger(),
+                  "ground filter IMU baseline re-seeded %.3f -> %.3f m/s² "
+                  "(absolute change %.3f m/s², %.1f%%); IMU scale or calibration may be incorrect",
+                  old_baseline,
+                  new_baseline,
+                  absolute_change,
+                  percentage_change);
     }
   }
 

@@ -10,6 +10,7 @@
 
 using mowgli_localization::GravityEstimator;
 using mowgli_localization::GravityEstimatorAction;
+using mowgli_localization::GravityEstimatorConfig;
 using mowgli_localization::GravityVector;
 using mowgli_localization::kStandardGravityMs2;
 
@@ -75,6 +76,7 @@ TEST(GravityEstimator, StableOffsetReseedsAndContinuesAcceptingNewBaseline)
   }
   EXPECT_EQ(estimator.update(GravityVector{0.1, -0.1, 13.09}, 5.1),
             GravityEstimatorAction::RESEEDED);
+  EXPECT_NEAR(estimator.previous_baseline_magnitude_ms2(), kStandardGravityMs2, 1e-12);
   // The first candidate is exactly vertical; re-seed uses the full candidate
   // average rather than the final sample's direction.
   const double mean_x = 50.0 * 0.1 / 51.0;
@@ -146,4 +148,116 @@ TEST(GravityEstimator, AcceptedSampleClearsRejectedRunAndRecoveryWorks)
   for (int i = 1; i <= 50; ++i)
     action = estimator.update(GravityVector{0.0, 0.0, 13.09}, 0.3 + i * 0.1);
   EXPECT_EQ(action, GravityEstimatorAction::RESEEDED);
+}
+
+TEST(GravityEstimator, GapDoesNotCountTowardReseedDuration)
+{
+  GravityEstimator estimator;
+  estimator.update(GravityVector{0.0, 0.0, kStandardGravityMs2}, 0.0);
+  EXPECT_EQ(estimator.update(GravityVector{0.0, 0.0, 13.09}, 0.1),
+            GravityEstimatorAction::REJECTED);
+  EXPECT_EQ(estimator.update(GravityVector{0.0, 0.0, 13.09}, 6.1),
+            GravityEstimatorAction::REJECTED);
+  EXPECT_NEAR(estimator.baseline_magnitude_ms2(), kStandardGravityMs2, 1e-12);
+}
+
+TEST(GravityEstimator, SamplesAtMaximumGapReseedAfterContinuousWindow)
+{
+  GravityEstimatorConfig config;
+  config.candidate_max_gap_s = 0.5;
+  GravityEstimator estimator(config);
+  estimator.update(GravityVector{0.0, 0.0, kStandardGravityMs2}, 0.0);
+
+  for (int i = 0; i < 10; ++i)
+  {
+    EXPECT_EQ(estimator.update(GravityVector{0.0, 0.0, 13.09}, 0.5 * i),
+              GravityEstimatorAction::REJECTED);
+  }
+  EXPECT_EQ(estimator.update(GravityVector{0.0, 0.0, 13.09}, 5.0),
+            GravityEstimatorAction::RESEEDED);
+}
+
+TEST(GravityEstimator, EqualTimestampsDoNotAdvanceReseedDuration)
+{
+  GravityEstimator estimator;
+  estimator.update(GravityVector{0.0, 0.0, kStandardGravityMs2}, 0.0);
+  for (int i = 0; i < 100; ++i)
+  {
+    EXPECT_EQ(estimator.update(GravityVector{0.0, 0.0, 13.09}, 1.0),
+              GravityEstimatorAction::REJECTED);
+  }
+  EXPECT_NEAR(estimator.baseline_magnitude_ms2(), kStandardGravityMs2, 1e-12);
+}
+
+TEST(GravityEstimator, ClockRollbackRestartsCandidateWindow)
+{
+  GravityEstimatorConfig config;
+  config.candidate_max_gap_s = 0.5;
+  GravityEstimator estimator(config);
+  estimator.update(GravityVector{0.0, 0.0, kStandardGravityMs2}, 0.0);
+
+  for (int i = 0; i <= 6; ++i)
+  {
+    EXPECT_EQ(estimator.update(GravityVector{0.0, 0.0, 13.09}, 0.5 * i),
+              GravityEstimatorAction::REJECTED);
+  }
+  EXPECT_EQ(estimator.update(GravityVector{0.0, 0.0, 13.09}, 1.0),
+            GravityEstimatorAction::REJECTED);
+  for (int i = 3; i <= 10; ++i)
+  {
+    EXPECT_EQ(estimator.update(GravityVector{0.0, 0.0, 13.09}, 0.5 * i),
+              GravityEstimatorAction::REJECTED);
+  }
+  EXPECT_EQ(estimator.update(GravityVector{0.0, 0.0, 13.09}, 5.5),
+            GravityEstimatorAction::REJECTED);
+  EXPECT_EQ(estimator.update(GravityVector{0.0, 0.0, 13.09}, 6.0),
+            GravityEstimatorAction::RESEEDED);
+}
+
+TEST(GravityEstimator, GapPartwayThroughRequiresFreshFullWindow)
+{
+  GravityEstimatorConfig config;
+  config.candidate_max_gap_s = 0.5;
+  GravityEstimator estimator(config);
+  estimator.update(GravityVector{0.0, 0.0, kStandardGravityMs2}, 0.0);
+
+  for (int i = 0; i <= 6; ++i)
+  {
+    EXPECT_EQ(estimator.update(GravityVector{0.0, 0.0, 13.09}, 0.5 * i),
+              GravityEstimatorAction::REJECTED);
+  }
+  for (int i = 8; i < 18; ++i)
+  {
+    EXPECT_EQ(estimator.update(GravityVector{0.0, 0.0, 13.09}, 0.5 * i),
+              GravityEstimatorAction::REJECTED);
+  }
+  EXPECT_EQ(estimator.update(GravityVector{0.0, 0.0, 13.09}, 9.0),
+            GravityEstimatorAction::RESEEDED);
+}
+
+TEST(GravityEstimator, NonFiniteTimestampClearsCandidate)
+{
+  GravityEstimator estimator;
+  estimator.update(GravityVector{0.0, 0.0, kStandardGravityMs2}, 0.0);
+  estimator.update(GravityVector{0.0, 0.0, 13.09}, 0.1);
+  EXPECT_TRUE(estimator.has_candidate());
+  EXPECT_EQ(estimator.update(GravityVector{0.0, 0.0, 13.09},
+                             std::numeric_limits<double>::infinity()),
+            GravityEstimatorAction::INVALID);
+  EXPECT_FALSE(estimator.has_candidate());
+}
+
+TEST(GravityEstimator, PlausibilityEnvelopeIncludesOnlyItsExactBoundaries)
+{
+  GravityEstimator lower_boundary;
+  EXPECT_EQ(lower_boundary.update(GravityVector{0.0, 0.0, 0.5 * kStandardGravityMs2}, 0.0),
+            GravityEstimatorAction::REJECTED);
+  EXPECT_EQ(lower_boundary.update(GravityVector{0.0, 0.0, 0.5 * kStandardGravityMs2 - 1e-6}, 0.1),
+            GravityEstimatorAction::INVALID);
+
+  GravityEstimator upper_boundary;
+  EXPECT_EQ(upper_boundary.update(GravityVector{0.0, 0.0, 1.5 * kStandardGravityMs2}, 0.0),
+            GravityEstimatorAction::REJECTED);
+  EXPECT_EQ(upper_boundary.update(GravityVector{0.0, 0.0, 1.5 * kStandardGravityMs2 + 1e-6}, 0.1),
+            GravityEstimatorAction::INVALID);
 }

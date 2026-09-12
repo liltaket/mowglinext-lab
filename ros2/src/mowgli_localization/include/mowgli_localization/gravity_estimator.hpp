@@ -9,9 +9,9 @@
 // mistake a bump or body acceleration for gravity. Samples near the active
 // gravity-magnitude baseline are accepted immediately. A plausible, but
 // out-of-band, acceleration vector is held as a candidate; only five seconds
-// of mutually-consistent full vectors
-// can replace a stale baseline. This avoids a permanent rejected-sample latch
-// while preserving pass-through behaviour until the new baseline is proven.
+// of continuous, mutually-consistent full vectors can replace a stale baseline.
+// This avoids a permanent rejected-sample latch while preserving pass-through
+// behaviour until the new baseline is proven.
 
 #ifndef MOWGLI_LOCALIZATION__GRAVITY_ESTIMATOR_HPP_
 #define MOWGLI_LOCALIZATION__GRAVITY_ESTIMATOR_HPP_
@@ -40,6 +40,8 @@ struct GravityEstimatorConfig
   double max_plausible_magnitude_ms2{1.5 * kStandardGravityMs2};
   /// Maximum full-vector distance within a stable rejected candidate run.
   double candidate_consistency_ms2{0.5};
+  /// Maximum time between samples in a continuous candidate run.
+  double candidate_max_gap_s{0.5};
   /// Stable candidate duration needed to replace a stale baseline.
   double reseed_after_s{5.0};
   /// Direction low-pass weight for ordinary accepted samples.
@@ -90,9 +92,11 @@ public:
 
     // Out of the normal band but physically plausible. It cannot refresh
     // freshness until a consistent, stationary-looking run proves a new bias.
-    if (have_candidate_ &&
+    const double candidate_gap_s = t_s - candidate_last_s_;
+    if (have_candidate_ && candidate_gap_s >= 0.0 && candidate_gap_s <= cfg_.candidate_max_gap_s &&
         distance(acceleration, candidate_anchor_) <= cfg_.candidate_consistency_ms2)
     {
+      candidate_last_s_ = t_s;
       ++candidate_count_;
       candidate_mean_ = add(candidate_mean_,
                             scale(subtract(acceleration, candidate_mean_),
@@ -100,6 +104,7 @@ public:
       if (t_s >= candidate_start_s_ && t_s - candidate_start_s_ >= cfg_.reseed_after_s)
       {
         direction_ = normalized(candidate_mean_);
+        previous_baseline_magnitude_ms2_ = baseline_magnitude_ms2_;
         baseline_magnitude_ms2_ = magnitude(candidate_mean_);
         have_direction_ = true;
         clear_candidate();
@@ -112,6 +117,7 @@ public:
     candidate_mean_ = acceleration;
     candidate_count_ = 1;
     candidate_start_s_ = t_s;
+    candidate_last_s_ = t_s;
     have_candidate_ = true;
     return GravityEstimatorAction::REJECTED;
   }
@@ -131,6 +137,10 @@ public:
   double baseline_magnitude_ms2() const
   {
     return baseline_magnitude_ms2_;
+  }
+  double previous_baseline_magnitude_ms2() const
+  {
+    return previous_baseline_magnitude_ms2_;
   }
 
 private:
@@ -169,19 +179,25 @@ private:
   void clear_candidate()
   {
     have_candidate_ = false;
+    candidate_anchor_ = GravityVector{};
+    candidate_mean_ = GravityVector{};
     candidate_count_ = 0;
+    candidate_start_s_ = 0.0;
+    candidate_last_s_ = 0.0;
   }
 
   GravityEstimatorConfig cfg_{};
   bool have_direction_{false};
   GravityVector direction_{0.0, 0.0, 1.0};
   double baseline_magnitude_ms2_{kStandardGravityMs2};
+  double previous_baseline_magnitude_ms2_{kStandardGravityMs2};
 
   bool have_candidate_{false};
   GravityVector candidate_anchor_{};
   GravityVector candidate_mean_{};
   std::size_t candidate_count_{0};
   double candidate_start_s_{0.0};
+  double candidate_last_s_{0.0};
 };
 
 }  // namespace mowgli_localization
