@@ -18,11 +18,13 @@
 
 #include <cmath>
 #include <cstddef>
+#include <limits>
 
 namespace mowgli_localization
 {
 
 constexpr double kStandardGravityMs2 = 9.80665;
+constexpr double kDefaultMaxReseedTiltRad = 0.52359877559829887308;
 
 struct GravityVector
 {
@@ -44,6 +46,8 @@ struct GravityEstimatorConfig
   double candidate_max_gap_s{0.5};
   /// Stable candidate duration needed to replace a stale baseline.
   double reseed_after_s{5.0};
+  /// Largest tilt allowed when adopting a replacement gravity direction.
+  double max_reseed_tilt_rad{kDefaultMaxReseedTiltRad};
   /// Direction low-pass weight for ordinary accepted samples.
   double direction_alpha{0.2};
 };
@@ -101,8 +105,15 @@ public:
       candidate_mean_ = add(candidate_mean_,
                             scale(subtract(acceleration, candidate_mean_),
                                   1.0 / static_cast<double>(candidate_count_)));
-      if (t_s >= candidate_start_s_ && t_s - candidate_start_s_ >= cfg_.reseed_after_s)
+      if (candidate_window_complete(t_s))
       {
+        if (!candidate_tilt_is_safe())
+        {
+          // An off-axis frozen bus must not turn recovery into obstacle removal.
+          // Require a new, full candidate window before trying again.
+          clear_candidate();
+          return GravityEstimatorAction::REJECTED;
+        }
         direction_ = normalized(candidate_mean_);
         previous_baseline_magnitude_ms2_ = baseline_magnitude_ms2_;
         baseline_magnitude_ms2_ = magnitude(candidate_mean_);
@@ -176,6 +187,48 @@ private:
   {
     return magnitude(subtract(a, b));
   }
+  bool reseed_config_is_valid() const
+  {
+    // A valid window must need more than one bounded interval. This prevents a
+    // permissive direct-use configuration from treating two isolated samples
+    // several seconds apart as a continuous five-second observation.
+    return std::isfinite(cfg_.candidate_max_gap_s) && cfg_.candidate_max_gap_s > 0.0 &&
+           std::isfinite(cfg_.reseed_after_s) && cfg_.reseed_after_s > 0.0 &&
+           cfg_.candidate_max_gap_s < cfg_.reseed_after_s &&
+           std::isfinite(cfg_.max_reseed_tilt_rad) && cfg_.max_reseed_tilt_rad >= 0.0 &&
+           cfg_.max_reseed_tilt_rad <= kHalfPi;
+  }
+  std::size_t minimum_reseed_sample_count() const
+  {
+    if (!reseed_config_is_valid())
+    {
+      return std::numeric_limits<std::size_t>::max();
+    }
+    const double intervals = std::ceil(cfg_.reseed_after_s / cfg_.candidate_max_gap_s);
+    if (!std::isfinite(intervals) ||
+        intervals >= static_cast<double>(std::numeric_limits<std::size_t>::max() - 1U))
+    {
+      return std::numeric_limits<std::size_t>::max();
+    }
+    return static_cast<std::size_t>(intervals) + 1U;
+  }
+  bool candidate_window_complete(double t_s) const
+  {
+    return reseed_config_is_valid() && t_s >= candidate_start_s_ &&
+           t_s - candidate_start_s_ >= cfg_.reseed_after_s &&
+           candidate_count_ >= minimum_reseed_sample_count();
+  }
+  bool candidate_tilt_is_safe() const
+  {
+    const double candidate_magnitude = magnitude(candidate_mean_);
+    if (!std::isfinite(candidate_magnitude) || candidate_magnitude < 1e-3)
+    {
+      return false;
+    }
+    const double horizontal_magnitude = std::hypot(candidate_mean_.x, candidate_mean_.y);
+    const double sin_tilt = horizontal_magnitude / candidate_magnitude;
+    return std::isfinite(sin_tilt) && sin_tilt <= std::sin(cfg_.max_reseed_tilt_rad);
+  }
   void clear_candidate()
   {
     have_candidate_ = false;
@@ -187,6 +240,7 @@ private:
   }
 
   GravityEstimatorConfig cfg_{};
+  static constexpr double kHalfPi = 1.57079632679489661923;
   bool have_direction_{false};
   GravityVector direction_{0.0, 0.0, 1.0};
   double baseline_magnitude_ms2_{kStandardGravityMs2};
