@@ -184,6 +184,8 @@ add_executable(costmap_scan_filter_node
   src/costmap_scan_filter_node.cpp
 )
 
+target_include_directories(costmap_scan_filter_node PUBLIC ${INCLUDE_DIR})
+
 ament_target_dependencies(costmap_scan_filter_node
   rclcpp
   sensor_msgs
